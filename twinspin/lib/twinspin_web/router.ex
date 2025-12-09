@@ -18,10 +18,15 @@ defmodule TwinspinWeb.Router do
   scope "/", TwinspinWeb do
     pipe_through :browser
 
-    live "/", DatabaseConnectionLive.Index, :index
+    # Oban Web Dashboard
+    forward "/oban", Oban.Web.Router
+
+    pipe_through :browser
+
+    # live "/", DatabaseConnectionLive.Index, :index
 
     # Removed the old root route
-    # live "/", ReconciliationLive.Index, :index
+    live "/", ReconciliationLive.Index, :index
   end
 
   # Authenticated routes
