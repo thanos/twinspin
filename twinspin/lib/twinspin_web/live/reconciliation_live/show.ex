@@ -6,9 +6,7 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
     Job,
     TableReconciliation,
     Run,
-    # Added Partition alias
     Partition,
-    # Added DiscrepancyResult alias
     DiscrepancyResult
   }
 
@@ -117,39 +115,82 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   defp get_job!(id) do
-    Job
-    |> Repo.get!(id)
-    |> Repo.preload([
-      :source_database_connection,
-      :target_database_connection,
-      :table_reconciliations,
-      reconciliation_runs:
-        from(r in Run,
-          order_by: [desc: r.inserted_at],
-          preload: [
-            partitions:
-              from(p in Partition,
-                where: is_nil(p.parent_partition_id),
-                order_by: [asc: p.partition_key],
-                preload: [
-                  :discrepancy_results,
-                  child_partitions:
-                    from(cp in Partition,
-                      order_by: [asc: cp.partition_key],
-                      preload: [
-                        :discrepancy_results,
-                        child_partitions:
-                          from(cp2 in Partition,
-                            order_by: [asc: cp2.partition_key],
-                            preload: [:discrepancy_results]
-                          )
-                      ]
-                    )
-                ]
-              )
-          ]
-        )
-    ])
+    job =
+      Job
+      |> Repo.get!(id)
+      |> Repo.preload([
+        :source_database_connection,
+        :target_database_connection,
+        :table_reconciliations,
+        reconciliation_runs:
+          from(r in Run,
+            order_by: [desc: r.inserted_at],
+            preload: [
+              partitions:
+                from(p in Partition,
+                  where: is_nil(p.parent_partition_id),
+                  order_by: [asc: p.partition_key],
+                  preload: [
+                    :discrepancy_results,
+                    child_partitions:
+                      from(cp in Partition,
+                        order_by: [asc: cp.partition_key],
+                        preload: [
+                          :discrepancy_results,
+                          child_partitions:
+                            from(cp2 in Partition,
+                              order_by: [asc: cp2.partition_key],
+                              preload: [:discrepancy_results]
+                            )
+                        ]
+                      )
+                  ]
+                )
+            ]
+          )
+      ])
+
+    # Manually preload nested partitions with Repo.preload for deeper nesting
+    runs_with_partitions =
+      Enum.map(job.reconciliation_runs, fn run ->
+        # Get root partitions
+        root_partitions =
+          Partition
+          |> where([p], p.reconciliation_run_id == ^run.id and is_nil(p.parent_partition_id))
+          |> order_by([p], asc: p.partition_key)
+          |> Repo.all()
+          |> Repo.preload(:discrepancy_results)
+
+        # Load children for each root
+        partitions_with_children =
+          Enum.map(root_partitions, fn root ->
+            children =
+              Partition
+              |> where([p], p.parent_partition_id == ^root.id)
+              |> order_by([p], asc: p.partition_key)
+              |> Repo.all()
+              |> Repo.preload(:discrepancy_results)
+
+            # Load grandchildren for each child
+            children_with_grandchildren =
+              Enum.map(children, fn child ->
+                grandchildren =
+                  Partition
+                  |> where([p], p.parent_partition_id == ^child.id)
+                  |> order_by([p], asc: p.partition_key)
+                  |> Repo.all()
+                  |> Repo.preload(:discrepancy_results)
+
+                Map.put(child, :child_partitions, grandchildren)
+              end)
+
+            Map.put(root, :child_partitions, children_with_grandchildren)
+          end)
+
+        Map.put(run, :partitions, partitions_with_children)
+      end)
+
+    Map.put(job, :reconciliation_runs, runs_with_partitions)
   end
 
   defp create_run(job_id) do
