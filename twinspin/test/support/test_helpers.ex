@@ -22,7 +22,7 @@ defmodule Twinspin.TestHelpers do
 
     attrs = Map.merge(default_attrs, Enum.into(attrs, %{}))
 
-    %DatabaseConnection{}
+    %Connection{}
     |> Connection.changeset(attrs)
     |> Repo.insert!()
   end
