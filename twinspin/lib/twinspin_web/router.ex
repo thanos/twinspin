@@ -20,6 +20,7 @@ defmodule TwinspinWeb.Router do
     live "/", ReconciliationLive.Index, :index
     live "/connections", DatabaseConnectionLive.Index, :index
     live "/jobs/:id", ReconciliationLive.Show, :show
+    live "/jobs/:id/edit", ReconciliationLive.Edit, :edit
   end
 
   # Other scopes may use custom stacks.
