@@ -31,8 +31,13 @@ defmodule Twinspin.TestHelpers do
   Creates a test reconciliation job with given attributes.
   """
   def create_job(attrs \\ %{}) do
-    source_conn = attrs[:source_connection] || create_connection(%{name: "Source DB"})
-    target_conn = attrs[:target_connection] || create_connection(%{name: "Target DB"})
+    source_conn =
+      attrs[:source_connection] ||
+        create_connection(%{name: "Source DB #{:erlang.unique_integer([:positive])}"})
+
+    target_conn =
+      attrs[:target_connection] ||
+        create_connection(%{name: "Target DB #{:erlang.unique_integer([:positive])}"})
 
     default_attrs = %{
       name: "Test Job",
