@@ -29,9 +29,9 @@ defmodule Twinspin.Reconciliation.DiscrepancyResult do
       :partition_id
     ])
     |> validate_inclusion(:discrepancy_type, [
-      "missing_source",
-      "missing_target",
-      "value_mismatch"
+      "missing_in_source",
+      "missing_in_target",
+      "field_mismatch"
     ])
   end
 end
