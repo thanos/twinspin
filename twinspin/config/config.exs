@@ -28,8 +28,6 @@ config :twinspin, Oban,
   engine: Oban.Engines.Basic,
   queues: [reconciliation: 10],
   plugins: [Oban.Plugins.Pruner]
-  ],
-  queues: [reconciliation: 10]
 
 # Configure esbuild (the version is required)
 config :esbuild,
