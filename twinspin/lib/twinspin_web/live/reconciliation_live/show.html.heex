@@ -79,6 +79,7 @@
           <div class="space-y-3">
             <div
               :for={table <- @job.table_reconciliations}
+              phx-hook="CSVDownload"
               class="rounded-lg border border-gray-800 bg-gray-950 p-4"
             >
               <div class="mb-2 flex items-center justify-between">
