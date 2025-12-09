@@ -44,24 +44,24 @@ defmodule TwinspinWeb.Layouts do
             <div class="flex items-center">
               <a href="/" class="flex items-center gap-2">
                 <span class="text-2xl font-bold text-cyan-400 font-mono">
-                {Twinspin.Settings.get_brand_name()}
-                <span class="text-2xl font-bold text-white font-mono">
-                · Database Reconciliation
+                  {Twinspin.Settings.get_brand_name()}
+                  <span class="text-2xl font-bold text-white font-mono">
+                    · Database Reconciliation
+                  </span>
                 </span>
-                </span>
-
               </a>
             </div>
-
+            
     <!-- Navigation Links -->
             <div class="flex items-center gap-1">
               <.nav_link href="/" text="Connections" />
               <.nav_link href="/settings" text="Settings" icon="hero-cog-6-tooth" />
+              <.nav_link href="/oban" text="Jobs" icon="hero-queue-list" />
             </div>
           </div>
         </div>
       </nav>
-
+      
     <!-- Main Content -->
       <main>
         {render_slot(@inner_block)}
