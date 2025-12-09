@@ -80,8 +80,8 @@ Repo.insert!(%TableReconciliation{
 Repo.insert!(%Run{
   reconciliation_job_id: job.id,
   status: "completed",
-  started_at: DateTime.utc_now() |> DateTime.add(-3600, :second),
-  completed_at: DateTime.utc_now() |> DateTime.add(-1800, :second),
+  started_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-3600, :second),
+  completed_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-1800, :second),
   total_rows: 125_000,
   processed_rows: 125_000,
   discrepancies_found: 47
