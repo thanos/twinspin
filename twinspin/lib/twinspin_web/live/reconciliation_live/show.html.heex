@@ -380,12 +380,21 @@
               {@selected_partition.partition_key}
             </code>
           </div>
-          <button
-            phx-click="close_modal"
-            class="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 font-mono text-sm text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-700"
-          >
-            ✕ Close
-          </button>
+          <div class="flex items-center gap-3">
+            <button
+              phx-click="export_discrepancies"
+              phx-value-partition_id={@selected_partition.id}
+              class="rounded-lg border border-cyan-700 bg-cyan-900 px-4 py-2 font-mono text-sm text-cyan-300 transition-colors hover:border-cyan-600 hover:bg-cyan-800"
+            >
+              ↓ Export CSV
+            </button>
+            <button
+              phx-click="close_modal"
+              class="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 font-mono text-sm text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-700"
+            >
+              ✕ Close
+            </button>
+          </div>
         </div>
 
         <div class="space-y-3">
