@@ -7,9 +7,6 @@ defmodule Twinspin.Reconciliation.DiscrepancyResult do
     field :row_identifier, :map
     field :field_diffs, :map
 
-    field :source_value, :string
-    field :target_value, :string
-
     belongs_to :partition, Twinspin.Reconciliation.Partition
 
     timestamps()
