@@ -138,7 +138,7 @@
           </button>
         </div>
       <% else %>
-        <div class="space-y-4">
+        <div id="jobs" phx-update="stream" class="space-y-4">
           <div
             :for={{id, job} <- @streams.jobs}
             id={id}
