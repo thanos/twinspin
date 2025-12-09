@@ -1,92 +1,101 @@
-# Build stage
+# ============================================
+# Stage 1: Builder - Compile Elixir application
+# ============================================
 FROM hexpm/elixir:1.15.7-erlang-26.1.2-alpine-3.18.4 AS builder
 
 # Install build dependencies
 RUN apk add --no-cache \
-    build-base \
     git \
+    build-base \
     nodejs \
-    npm
+    npm \
+    postgresql-dev
 
-# Set build ENV
-ENV MIX_ENV=prod
+# Set working directory
+WORKDIR /app
 
-# Install hex + rebar
+# Install hex and rebar
 RUN mix local.hex --force && \
     mix local.rebar --force
 
-# Create app directory
-WORKDIR /app
+# Set build environment
+ENV MIX_ENV=prod
 
-# Copy mix files
+# Copy mix files and fetch dependencies
 COPY mix.exs mix.lock ./
+RUN mix deps.get --only prod
+RUN mix deps.compile
 
-# Install mix dependencies
-RUN mix deps.get --only prod && \
-    mix deps.compile
-
-# Copy config files
-COPY config/config.exs config/prod.exs config/runtime.exs config/
-
-# Copy assets
-COPY assets assets
+# Copy application code
+COPY config config
 COPY priv priv
+COPY lib lib
+COPY assets assets
 
 # Compile assets
 RUN mix assets.deploy
 
-# Copy application code
-COPY lib lib
+# Compile the application
+RUN mix compile
 
-# Compile and build release
-RUN mix compile && \
-    mix phx.gen.release && \
-    mix release
+# Build the release
+RUN mix release
 
-# Runtime stage
+# ============================================
+# Stage 2: Runtime - Minimal production image with ODBC drivers
+# ============================================
 FROM alpine:3.18.4
 
-# Install runtime dependencies
+# Install runtime dependencies and ODBC drivers
 RUN apk add --no-cache \
-    libstdc++ \
+    bash \
+    postgresql-client \
+    postgresql-libs \
+    unixodbc \
+    unixodbc-dev \
+    curl \
     openssl \
     ncurses-libs \
-    postgresql-client
+    libstdc++ \
+    libgcc
 
-# Create app user (for rootless compatibility)
-RUN addgroup -g 1000 app && \
-    adduser -D -u 1000 -G app app
+# Install PostgreSQL ODBC driver
+RUN apk add --no-cache postgresql-odbc
 
-# Set work directory
-WORKDIR /app
-
-# Copy release from builder
-COPY --from=builder --chown=app:app /app/_build/prod/rel/twinspin ./
-
-# Create directories for runtime
-RUN mkdir -p /app/tmp && \
+# Create app user and directories
+RUN adduser -D -u 1000 -h /app app && \
+    mkdir -p /app/odbc && \
     chown -R app:app /app
 
-# Switch to app user
-USER app
+WORKDIR /app
 
-# Set environment
-ENV HOME=/app \
-    MIX_ENV=prod \
-    PORT=4000 \
-    PHX_SERVER=true
+# Copy the release from builder
+COPY --from=builder --chown=app:app /app/_build/prod/rel/twinspin ./
 
-# Expose port
-EXPOSE 4000
+# Copy ODBC configuration files
+COPY --chown=app:app docker/odbc/odbcinst.ini /etc/odbcinst.ini
+COPY --chown=app:app docker/odbc/odbc.ini /app/odbc/odbc.ini
 
 # Copy entrypoint script
 COPY --chown=app:app entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:4000/ || exit 1
+# Set environment variables
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    ODBCINI=/app/odbc/odbc.ini \
+    ODBCSYSINI=/etc
 
-# Start the application
+# Switch to app user
+USER app
+
+# Expose Phoenix port
+EXPOSE 4000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:4000/ || exit 1
+
+# Run entrypoint script
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["/app/bin/twinspin", "start"]
+CMD ["bin/twinspin", "start"]
