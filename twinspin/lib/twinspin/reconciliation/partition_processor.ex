@@ -133,7 +133,7 @@ defmodule Twinspin.Reconciliation.PartitionProcessor do
     end
   end
 
-  defp create_missing_target_discrepancy(partition, key, source_row) do
+  defp create_missing_target_discrepancy(partition, key, _source_row) do
     attrs = %{
       partition_id: partition.id,
       discrepancy_type: "missing_in_target",
@@ -149,7 +149,7 @@ defmodule Twinspin.Reconciliation.PartitionProcessor do
     result
   end
 
-  defp create_missing_source_discrepancy(partition, key, target_row) do
+  defp create_missing_source_discrepancy(partition, key, _target_row) do
     attrs = %{
       partition_id: partition.id,
       discrepancy_type: "missing_in_source",
