@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Mix artifacts
+/_build
+/deps
+*.ez
+
+# Generated on crash by the VM
+erl_crash.dump
+
+# Static artifacts
+/assets/node_modules
+
+# Since we are building assets from scratch,
+# we ignore priv/static
+/priv/static/
+
+# Test artifacts
+/cover
+/test
+
+# Editor and IDE files
+.elixir_ls
+.vscode
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Documentation
+README*.md
+docs/
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
