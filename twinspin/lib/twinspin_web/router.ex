@@ -14,11 +14,31 @@ defmodule TwinspinWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Public routes (e.g., landing page, login, registration)
+  # Oban Web Dashboard (outside TwinspinWeb scope)
+  forward "/oban", Oban.Web.Plug, oban: Oban
+
   scope "/", TwinspinWeb do
     pipe_through :browser
 
+    # live "/", DatabaseConnectionLive.Index, :index
+
+    # Removed the old root route
     live "/", ReconciliationLive.Index, :index
-    live "/connections", DatabaseConnectionLive.Index, :index
+  end
+
+  # Authenticated routes
+  # Oban Web Dashboard (outside TwinspinWeb scope)
+  forward "/oban", Oban.Web.Plug, oban: Oban
+
+  scope "/", TwinspinWeb do
+    # on_mount will be added later for authentication
+    live_session :require_authenticated_user, on_mount: [] do
+      live "/settings", SettingsLive, :index
+      live "/connections", DatabaseConnectionLive.Index, :index
+      live "/jobs/:id", ReconciliationLive.Show, :show
+      live "/jobs/:id/edit", ReconciliationLive.Edit, :edit
+    end
   end
 
   # Other scopes may use custom stacks.
@@ -36,8 +56,6 @@ defmodule TwinspinWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through :browser
-
       live_dashboard "/dashboard", metrics: TwinspinWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end

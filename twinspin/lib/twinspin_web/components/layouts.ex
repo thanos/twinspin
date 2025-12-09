@@ -35,8 +35,55 @@ defmodule TwinspinWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    {render_slot(@inner_block)}
+    <div class="min-h-screen bg-gray-950">
+      <!-- Navbar -->
+      <nav class="border-b border-gray-800 bg-gray-900">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="flex h-16 items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center">
+              <a href="/" class="flex items-center gap-2">
+                <span class="text-2xl font-bold text-cyan-400 font-mono">
+                  {Twinspin.Settings.get_brand_name()}
+                  <span class="text-2xl font-bold text-white font-mono">
+                    · Database Reconciliation
+                  </span>
+                </span>
+              </a>
+            </div>
+            
+    <!-- Navigation Links -->
+            <div class="flex items-center gap-1">
+              <.nav_link href="/" text="Connections" />
+              <.nav_link href="/settings" text="Settings" icon="hero-cog-6-tooth" />
+              <.nav_link href="/oban" text="Jobs" icon="hero-queue-list" />
+            </div>
+          </div>
+        </div>
+      </nav>
+      
+    <!-- Main Content -->
+      <main>
+        {render_slot(@inner_block)}
+      </main>
+    </div>
     <.flash_group flash={@flash} />
+    """
+  end
+
+  attr :href, :string, required: true
+  attr :text, :string, required: true
+  attr :icon, :string, default: nil
+
+  defp nav_link(assigns) do
+    ~H"""
+    <a
+      href={@href}
+      class="flex items-center gap-2 rounded-lg px-3 py-2 font-mono text-sm text-gray-300 transition-colors hover:bg-gray-800 hover:text-cyan-400"
+    >
+      <.icon :if={@icon} name={@icon} class="size-5" />
+      {@text}
+    </a>
     """
   end
 

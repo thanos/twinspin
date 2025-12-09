@@ -1,0 +1,96 @@
+==========================
+http://localhost:4000/jobs/3
+==========================
+
+[Home](/) / Job Detail
+
+Customer Data Reconciliation
+============================
+
+Reconcile customer records between DB2 and PostgreSQL
+
+[Edit Job](/jobs/3/edit)
+
+Source: Production DB2 (db2)
+
+Target: Analytics PostgreSQL (postgres)
+
+Threshold: 50000 rows
+
+Max Depth: 8
+
+Table Reconciliations
+- --------------------
+
+# ## customers
+
+Primary Key: customer\_id
+
+Compare Columns: email, first\_name, last\_name, phone, updated\_at
+
+# ## orders
+
+Primary Key: order\_id
+
+Compare Columns: customer\_id, total\_amount, status, created\_at
+
+Reconciliation Runs
+- ------------------
+
+▶ Start New Run
+
+pending
+
+Started: 12m ago
+
+Delete
+
+Total Rows: 0
+
+Processed: 0
+
+Discrepancies: 0
+
+completed
+
+Started: 1h ago
+
+Duration: 30m 0s
+
+Delete
+
+Total Rows: 125000
+
+Processed: 125000
+
+Discrepancies: 47
+
+# ### Partition Tree
+
+L0 `0000-ZZZZ` completed
+
+Rows: 125000 Discrepancies: 0
+
+L1 `0000-MMMM` completed
+
+Rows: 62500 Discrepancies: 0
+
+L2 `0000-GGGG` completed
+
+Rows: 31250 Discrepancies: 2 View
+
+L2 `GGGG-MMMM` completed
+
+Rows: 31250 Discrepancies: 0
+
+L1 `MMMM-ZZZZ` completed
+
+Rows: 62500 Discrepancies: 0
+
+L2 `MMMM-SSSS` completed
+
+Rows: 31250 Discrepancies: 0
+
+L2 `SSSS-ZZZZ` completed
+
+Rows: 31250 Discrepancies: 1 View

@@ -17,7 +17,8 @@ defmodule Twinspin.Application do
       # Start a worker by calling: Twinspin.Worker.start_link(arg)
       # {Twinspin.Worker, arg},
       # Start to serve requests, typically the last entry
-      TwinspinWeb.Endpoint
+      TwinspinWeb.Endpoint,
+      {Oban, Application.fetch_env!(:twinspin, Oban)}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

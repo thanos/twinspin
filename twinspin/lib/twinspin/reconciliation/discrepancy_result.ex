@@ -7,9 +7,6 @@ defmodule Twinspin.Reconciliation.DiscrepancyResult do
     field :row_identifier, :map
     field :field_diffs, :map
 
-    field :source_value, :string
-    field :target_value, :string
-
     belongs_to :partition, Twinspin.Reconciliation.Partition
 
     timestamps()
@@ -22,8 +19,6 @@ defmodule Twinspin.Reconciliation.DiscrepancyResult do
       :discrepancy_type,
       :row_identifier,
       :field_diffs,
-      :source_value,
-      :target_value,
       :partition_id
     ])
     |> validate_required([
@@ -32,9 +27,9 @@ defmodule Twinspin.Reconciliation.DiscrepancyResult do
       :partition_id
     ])
     |> validate_inclusion(:discrepancy_type, [
-      "missing_source",
-      "missing_target",
-      "value_mismatch"
+      "missing_in_source",
+      "missing_in_target",
+      "field_mismatch"
     ])
   end
 end
