@@ -101,16 +101,22 @@ services:
 ```
 
 ## ODBC Driver Setup
-
-The Docker image includes PostgreSQL ODBC drivers by default. For DB2 and Oracle support, you'll need to provide the proprietary drivers.
-
-### PostgreSQL ODBC (Pre-installed)
-
-PostgreSQL ODBC drivers are included in the base image. Configuration is in:
-- `/etc/odbcinst.ini` - Driver definitions
-- `/app/odbc/odbc.ini` - Data source names (DSNs)
-
 ### DB2 ODBC Driver (Optional)
+
+To add DB2 support:
+
+1. Download IBM DB2 client from IBM's website
+2. Run the installation script inside the container:
+
+```bash
+docker-compose exec app /bin/bash
+sh docker/scripts/install_db2_driver.sh
+```
+
+3. Follow the script prompts to complete installation
+4. Update DSN settings in `docker/odbc/odbc.ini`
+5. Restart the container: `docker-compose restart app`
+
 
 To add DB2 support:
 
@@ -127,6 +133,21 @@ COPY --chown=app:app docker/odbc/drivers/libdb2o.so /opt/ibm/db2/clidriver/lib/
 5. Update DSN settings in `docker/odbc/odbc.ini`
 
 ### Oracle ODBC Driver (Optional)
+
+To add Oracle support:
+
+1. Download Oracle Instant Client from Oracle's website
+2. Run the installation script inside the container:
+
+```bash
+docker-compose exec app /bin/bash
+sh docker/scripts/install_oracle_driver.sh
+```
+
+3. Follow the script prompts to complete installation
+4. Update DSN settings in `docker/odbc/odbc.ini`
+5. Restart the container: `docker-compose restart app`
+
 
 To add Oracle support:
 
