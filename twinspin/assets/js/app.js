@@ -25,6 +25,7 @@ import { LiveSocket } from "phoenix_live_view";
 import { hooks as colocatedHooks } from "phoenix-colocated/twinspin";
 import topbar from "../vendor/topbar";
 import CSVDownloadHook from "./csv_download_hook";
+import CSVDownloadHook from "./csv_download_hook";
 
 const csrfToken = document
   .querySelector("meta[name='csrf-token']")
