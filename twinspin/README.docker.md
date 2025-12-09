@@ -1,20 +1,60 @@
-# TwinSpin Docker/Podman Setup
+# TwinSpin Docker Deployment Guide
 
-This guide covers running TwinSpin in containers using either Docker or Podman.
+This guide covers deploying TwinSpin using Docker and Docker Compose with full ODBC driver support for PostgreSQL, DB2, and Oracle databases.
+
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Quick Start](#quick-start)
+3. [Configuration](#configuration)
+4. [ODBC Driver Setup](#odbc-driver-setup)
+5. [Building and Running](#building-and-running)
+6. [Production Deployment](#production-deployment)
+7. [Monitoring and Maintenance](#monitoring-and-maintenance)
+8. [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
 
-### For Docker
-- Docker Engine 20.10+
-- Docker Compose 2.0+
+### Required Software
 
-### For Podman (Recommended for rootless containers)
-- Podman 4.0+
-- podman-compose (install via `pip install podman-compose`)
+- **Docker** 20.10+ or **Podman** 3.0+
+- **Docker Compose** 2.0+ (or podman-compose)
+- Minimum 2GB RAM available
+- Minimum 10GB disk space
+
+### Optional for DB2/Oracle Support
+
+- IBM DB2 client libraries (for DB2 ODBC driver)
+- Oracle Instant Client (for Oracle ODBC driver)
 
 ## Quick Start
 
-### Using Docker Compose
+### 1. Generate Secret Key Base
+
+Before deploying, generate a secure secret key base:
+
+```bash
+# Generate a random secret key
+openssl rand -base64 64 | tr -d '\n'
+```
+
+Save this value - you'll need it for the `SECRET_KEY_BASE` environment variable.
+
+### 2. Configure Environment
+
+Create a `.env` file in the project root:
+
+```bash
+# Required
+SECRET_KEY_BASE=your_generated_secret_key_here
+PHX_HOST=localhost
+
+# Optional
+POOL_SIZE=10
+PORT=4000
+```
+
+### 3. Start the Application
 
 ```bash
 # Build and start all services
@@ -26,341 +66,162 @@ docker-compose logs -f app
 # Stop services
 docker-compose down
 
-# Stop and remove volumes (WARNING: destroys data)
+# Stop and remove volumes (WARNING: deletes database data)
 docker-compose down -v
 ```
 
-### Using Podman Compose
+The application will be available at http://localhost:4000
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SECRET_KEY_BASE` | Yes | - | Phoenix secret key (generate with `openssl rand -base64 64`) |
+| `DATABASE_URL` | No | `ecto://postgres:postgres@postgres:5432/twinspin_prod` | PostgreSQL connection URL |
+| `PHX_HOST` | No | `localhost` | Hostname for Phoenix endpoints |
+| `PORT` | No | `4000` | HTTP port to listen on |
+| `POOL_SIZE` | No | `10` | Database connection pool size |
+
+### Docker Compose Override
+
+For custom configurations, create a `docker-compose.override.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    environment:
+      POOL_SIZE: 20
+      PHX_HOST: twinspin.example.com
+    ports:
+      - "8080:4000"
+```
+
+## ODBC Driver Setup
+
+The Docker image includes PostgreSQL ODBC drivers by default. For DB2 and Oracle support, you'll need to provide the proprietary drivers.
+
+### PostgreSQL ODBC (Pre-installed)
+
+PostgreSQL ODBC drivers are included in the base image. Configuration is in:
+- `/etc/odbcinst.ini` - Driver definitions
+- `/app/odbc/odbc.ini` - Data source names (DSNs)
+
+### DB2 ODBC Driver (Optional)
+
+To add DB2 support:
+
+1. Download IBM DB2 client from IBM's website
+2. Place the `libdb2o.so` file in `docker/odbc/drivers/`
+3. Update `Dockerfile` to copy the driver:
+
+```dockerfile
+# In the runtime stage, add:
+COPY --chown=app:app docker/odbc/drivers/libdb2o.so /opt/ibm/db2/clidriver/lib/
+```
+
+4. Uncomment the DB2 section in `docker/odbc/odbcinst.ini`
+5. Update DSN settings in `docker/odbc/odbc.ini`
+
+### Oracle ODBC Driver (Optional)
+
+To add Oracle support:
+
+1. Download Oracle Instant Client from Oracle's website
+2. Place the `libsqora.so.19.1` file in `docker/odbc/drivers/`
+3. Update `Dockerfile` to copy the driver:
+
+```dockerfile
+# In the runtime stage, add:
+COPY --chown=app:app docker/odbc/drivers/libsqora.so.19.1 /usr/lib/oracle/19.3/client64/lib/
+```
+
+4. Uncomment the Oracle section in `docker/odbc/odbcinst.ini`
+5. Update DSN settings in `docker/odbc/odbc.ini`
+
+### Configuring Data Sources
+
+Edit `docker/odbc/odbc.ini` to add your database connections:
+
+```ini
+[MyDB2Connection]
+Description = My DB2 Database
+Driver = IBM DB2 ODBC DRIVER
+Database = MYDB
+Hostname = db2.example.com
+Port = 50000
+Protocol = TCPIP
+UID = db2user
+PWD = secret_password
+```
+
+**Security Note**: For production, use Docker secrets or environment variable substitution instead of hardcoding passwords.
+
+## Building and Running
+
+### Development Build
 
 ```bash
-# Build and start all services
+# Build the image
+docker-compose build
+
+# Start services
+docker-compose up
+
+# Or in detached mode
+docker-compose up -d
+```
+
+### Production Build
+
+```bash
+# Build with production optimizations
+docker-compose build --no-cache
+
+# Start with production settings
+docker-compose -f docker-compose.yml up -d
+```
+
+### Podman Alternative
+
+If using Podman instead of Docker:
+
+```bash
+# Build
+podman-compose build
+
+# Run
 podman-compose up -d
 
-# View logs
-podman-compose logs -f app
-
-# Stop services
-podman-compose down
-
-# Stop and remove volumes (WARNING: destroys data)
-podman-compose down -v
+# Or run rootless
+podman-compose --podman-run-args="--userns=keep-id" up -d
 ```
-
-## Manual Build and Run
-
-### Build the Image
-
-#### Docker
-```bash
-docker build -t twinspin:latest .
-```
-
-#### Podman
-```bash
-podman build -t twinspin:latest .
-```
-
-### Run PostgreSQL Container
-
-#### Docker
-```bash
-docker run -d \
-  --name twinspin-db \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=twinspin_prod \
-  -p 5432:5432 \
-  -v twinspin_postgres:/var/lib/postgresql/data \
-  postgres:15-alpine
-```
-
-#### Podman
-```bash
-podman run -d \
-  --name twinspin-db \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=twinspin_prod \
-  -p 5432:5432 \
-  -v twinspin_postgres:/var/lib/postgresql/data \
-  postgres:15-alpine
-```
-
-### Run TwinSpin Container
-
-#### Docker
-```bash
-docker run -d \
-  --name twinspin-app \
-  --link twinspin-db:db \
-  -e DATABASE_URL="ecto://postgres:postgres@db:5432/twinspin_prod" \
-  -e SECRET_KEY_BASE="$(mix phx.gen.secret)" \
-  -e PHX_HOST=localhost \
-  -e PORT=4000 \
-  -p 4000:4000 \
-  twinspin:latest
-```
-
-#### Podman
-```bash
-# Create a pod (Podman's equivalent to docker-compose networking)
-podman pod create --name twinspin-pod -p 4000:4000 -p 5432:5432
-
-# Run PostgreSQL in the pod
-podman run -d \
-  --pod twinspin-pod \
-  --name twinspin-db \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=twinspin_prod \
-  -v twinspin_postgres:/var/lib/postgresql/data \
-  postgres:15-alpine
-
-# Wait for PostgreSQL to be ready
-sleep 10
-
-# Run TwinSpin in the pod
-podman run -d \
-  --pod twinspin-pod \
-  --name twinspin-app \
-  -e DATABASE_HOST=localhost \
-  -e DATABASE_PORT=5432 \
-  -e DATABASE_USER=postgres \
-  -e DATABASE_PASSWORD=postgres \
-  -e DATABASE_NAME=twinspin_prod \
-  -e SECRET_KEY_BASE="$(mix phx.gen.secret)" \
-  -e PHX_HOST=localhost \
-  -e PORT=4000 \
-  twinspin:latest
-```
-
-## Environment Variables
-
-### Required Variables
-
-| Variable | Description | Default | Example |
-|----------|-------------|---------|---------|
-| `DATABASE_URL` | Full database connection URL | - | `ecto://user:pass@host:5432/db` |
-| `DATABASE_HOST` | Database hostname | `db` | `localhost` or `db` |
-| `DATABASE_PORT` | Database port | `5432` | `5432` |
-| `DATABASE_USER` | Database username | `postgres` | `postgres` |
-| `DATABASE_PASSWORD` | Database password | `postgres` | `your-secure-password` |
-| `DATABASE_NAME` | Database name | `twinspin_prod` | `twinspin_prod` |
-| `SECRET_KEY_BASE` | Phoenix secret key | - | Generate with `mix phx.gen.secret` |
-
-### Optional Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PHX_HOST` | Phoenix host | `localhost` |
-| `PHX_SERVER` | Start Phoenix server | `true` |
-| `PORT` | Application port | `4000` |
-| `POOL_SIZE` | Database pool size | `10` |
-| `OBAN_QUEUES` | Oban queue configuration | `default:10,reconciliation:5` |
-
-## Generating SECRET_KEY_BASE
-
-You must generate a secure secret key base before running in production:
-
-```bash
-# Using mix (requires Elixir installed locally)
-mix phx.gen.secret
-
-# Or use OpenSSL
-openssl rand -base64 64
-```
-
-Update the `docker-compose.yml` file or pass via environment variable:
-
-```bash
-export SECRET_KEY_BASE="your-generated-secret-here"
-```
-
-## Accessing the Application
-
-Once running, access TwinSpin at:
-- **Local**: http://localhost:4000
-- **Health check**: http://localhost:4000/
-
-## Database Migrations
-
-Migrations run automatically on container startup via the `entrypoint.sh` script.
-
-To run migrations manually:
-
-#### Docker
-```bash
-docker exec -it twinspin-app /app/bin/twinspin eval "Twinspin.Release.migrate"
-```
-
-#### Podman
-```bash
-podman exec -it twinspin-app /app/bin/twinspin eval "Twinspin.Release.migrate"
-```
-
-## Troubleshooting
-
-### View Application Logs
-
-#### Docker
-```bash
-docker logs -f twinspin-app
-```
-
-#### Podman
-```bash
-podman logs -f twinspin-app
-```
-
-### Access Application Shell (IEx)
-
-#### Docker
-```bash
-docker exec -it twinspin-app /app/bin/twinspin remote
-```
-
-#### Podman
-```bash
-podman exec -it twinspin-app /app/bin/twinspin remote
-```
-
-### Database Connection Issues
-
-1. Ensure PostgreSQL is running and healthy:
-   ```bash
-   docker exec twinspin-db pg_isready -U postgres
-   # or
-   podman exec twinspin-db pg_isready -U postgres
-   ```
-
-2. Check database logs:
-   ```bash
-   docker logs twinspin-db
-   # or
-   podman logs twinspin-db
-   ```
-
-3. Verify network connectivity (Docker Compose creates a bridge network automatically)
-
-### Container Won't Start
-
-1. Check if port 4000 is already in use:
-   ```bash
-   lsof -i :4000
-   ```
-
-2. Verify SECRET_KEY_BASE is set properly
-
-3. Check container logs for errors
 
 ## Production Deployment
 
 ### Pre-Deployment Checklist
 
-Before deploying to production, complete these essential steps:
+- [ ] Generate and set `SECRET_KEY_BASE`
+- [ ] Configure `PHX_HOST` for your domain
+- [ ] Update ODBC DSN configurations with production credentials
+- [ ] Set up SSL/TLS termination (reverse proxy recommended)
+- [ ] Configure firewall rules
+- [ ] Set up backup strategy for PostgreSQL volume
+- [ ] Configure monitoring and alerting
 
-1. **Generate Secure SECRET_KEY_BASE**
-   ```bash
-   # Generate a secure 64-byte key
-   mix phx.gen.secret
-   # or
-   openssl rand -base64 64
-   ```
+### Using a Reverse Proxy (Recommended)
 
-2. **Update docker-compose.yml**
-   - Replace `changeme-generate-with-mix-phx-gen-secret` with your generated key
-   - Change `POSTGRES_PASSWORD` from default `postgres`
-   - Change `DATABASE_PASSWORD` to match
+Use Nginx, Caddy, or Traefik as a reverse proxy:
 
-3. **Review Environment Variables**
-   - Set `PHX_HOST` to your production domain
-   - Adjust `POOL_SIZE` based on expected load
-   - Configure `OBAN_QUEUES` for your workload
-
-4. **SSL/TLS Configuration**
-   - Use a reverse proxy (nginx, Caddy, Traefik) for HTTPS
-   - Configure SSL certificates
-   - Set up automatic renewal (Let's Encrypt)
-
-### Deployment Steps
-
-#### 1. Prepare the Server
-
-```bash
-# Install Podman (Fedora/RHEL/CentOS)
-sudo dnf install podman podman-compose
-
-# Install Podman (Ubuntu/Debian)
-sudo apt update
-sudo apt install podman
-pip3 install podman-compose
-
-# Or install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo apt install docker-compose  # Ubuntu/Debian
-```
-
-#### 2. Clone and Configure
-
-```bash
-# Clone your repository
-git clone https://github.com/yourusername/twinspin.git
-cd twinspin
-
-# Generate SECRET_KEY_BASE
-export SECRET_KEY_BASE=$(openssl rand -base64 64)
-
-# Update docker-compose.yml with your secrets
-# Edit the file manually or use sed:
-sed -i "s/changeme-generate-with-mix-phx-gen-secret/$SECRET_KEY_BASE/" docker-compose.yml
-```
-
-#### 3. Build and Deploy
-
-```bash
-# Using Podman
-podman-compose build
-podman-compose up -d
-
-# Using Docker
-docker-compose build
-docker-compose up -d
-
-# Verify containers are running
-podman-compose ps
-# or
-docker-compose ps
-```
-
-#### 4. Verify Deployment
-
-```bash
-# Check application logs
-podman-compose logs -f app
-
-# Check database logs
-podman-compose logs db
-
-# Test health endpoint
-curl http://localhost:4000/
-```
-
-#### 5. Set Up Reverse Proxy (Nginx Example)
+**Nginx Example:**
 
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name your-domain.com;
-
-    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    server_name twinspin.example.com;
 
     location / {
         proxy_pass http://localhost:4000;
@@ -375,168 +236,199 @@ server {
 }
 ```
 
-### Monitoring and Maintenance
+### Scaling Considerations
 
-#### Health Checks
+For high-load scenarios:
+
+1. **Horizontal Scaling**: Run multiple app containers behind a load balancer
+2. **Database Connection Pooling**: Increase `POOL_SIZE` based on load
+3. **External PostgreSQL**: Use managed database service instead of container
+
+Example scaling with Docker Compose:
+
+```bash
+docker-compose up -d --scale app=3
+```
+
+### Health Checks
+
+The container includes a built-in health check that pings the root endpoint every 30 seconds:
 
 ```bash
 # Check container health
-podman inspect twinspin-app --format='{{.State.Health.Status}}'
+docker ps
+# Look for "healthy" status
 
 # View health check logs
-podman inspect twinspin-app --format='{{json .State.Health}}'
+docker inspect --format='{{json .State.Health}}' twinspin-app | jq
 ```
 
-#### Log Management
+## Monitoring and Maintenance
+
+### Viewing Logs
 
 ```bash
-# Follow live logs
-podman-compose logs -f --tail=100 app
+# All logs
+docker-compose logs
 
-# Export logs
-podman logs twinspin-app > /var/log/twinspin/app.log
+# Follow app logs
+docker-compose logs -f app
 
-# Rotate logs with logrotate
-# Create /etc/logrotate.d/twinspin
+# Follow PostgreSQL logs
+docker-compose logs -f postgres
+
+# Last 100 lines
+docker-compose logs --tail=100 app
 ```
 
-#### Updates and Rollbacks
+### Database Migrations
+
+Migrations run automatically on container startup via `entrypoint.sh`. To run manually:
 
 ```bash
-# Pull latest code
-git pull origin main
+# Run pending migrations
+docker-compose exec app bin/twinspin eval "Twinspin.Release.migrate"
+
+# Rollback one migration
+docker-compose exec app bin/twinspin eval "Twinspin.Release.rollback(Twinspin.Repo, 20240101120000)"
+```
+
+### Database Backups
+
+**Automated Backup Script:**
+
+```bash
+#!/bin/bash
+BACKUP_DIR="/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+docker-compose exec -T postgres pg_dump -U postgres twinspin_prod > "$BACKUP_DIR/twinspin_$DATE.sql"
+```
+
+**Restore from Backup:**
+
+```bash
+docker-compose exec -T postgres psql -U postgres twinspin_prod < /path/to/backup.sql
+```
+
+### Volume Management
+
+```bash
+# List volumes
+docker volume ls
+
+# Inspect volume
+docker volume inspect twinspin_postgres_data
+
+# Backup volume
+docker run --rm -v twinspin_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_data_backup.tar.gz /data
+
+# Restore volume
+docker run --rm -v twinspin_postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres_data_backup.tar.gz -C /
+```
+
+### Updating the Application
+
+```bash
+# Pull latest changes
+git pull
 
 # Rebuild and restart
-podman-compose down
-podman-compose build
-podman-compose up -d
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
 
-# Rollback if needed
-git checkout <previous-commit>
-podman-compose down
-podman-compose build
-podman-compose up -d
+# Check logs for successful startup
+docker-compose logs -f app
 ```
 
-### Performance Tuning
+## Troubleshooting
 
-#### Database Connection Pool
+### Container Won't Start
 
-Adjust based on your workload:
-```yaml
-# docker-compose.yml
-environment:
-  POOL_SIZE: 20  # Increase for heavy database usage
-```
-
-#### Oban Workers
-
-```yaml
-# docker-compose.yml
-environment:
-  # default:10 for general tasks
-  # reconciliation:20 for more concurrent reconciliation jobs
-  OBAN_QUEUES: "default:10,reconciliation:20"
-```
-
-#### Resource Limits
-
-```yaml
-# docker-compose.yml
-services:
-  app:
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '1.0'
-          memory: 1G
-```
-
-### Security Considerations
-
-1. **Change default passwords** in `docker-compose.yml`
-2. **Generate a secure SECRET_KEY_BASE** (see above)
-3. **Use secrets management** instead of environment variables for sensitive data
-4. **Enable SSL/TLS** for production (consider using a reverse proxy like nginx)
-5. **Restrict database access** to the application network only
-6. **Regular backups** of the PostgreSQL volume
-
-### Volume Backup
-
-#### Docker
+**Check logs:**
 ```bash
-# Backup PostgreSQL data
-docker run --rm -v twinspin_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/twinspin-db-backup.tar.gz /data
-
-# Restore
-docker run --rm -v twinspin_postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/twinspin-db-backup.tar.gz -C /
+docker-compose logs app
 ```
 
-#### Podman
-```bash
-# Backup PostgreSQL data
-podman run --rm -v twinspin_postgres_data:/data -v $(pwd):/backup:Z alpine tar czf /backup/twinspin-db-backup.tar.gz /data
+**Common issues:**
+- Missing `SECRET_KEY_BASE` - Set in `.env` file
+- PostgreSQL not ready - Container will retry automatically
+- Port 4000 already in use - Change `PORT` environment variable
 
-# Restore
-podman run --rm -v twinspin_postgres_data:/data -v $(pwd):/backup:Z alpine tar xzf /backup/twinspin-db-backup.tar.gz -C /
+### ODBC Connection Failures
+
+**Test ODBC configuration:**
+```bash
+# Enter container
+docker-compose exec app bash
+
+# Test ODBC drivers
+odbcinst -q -d
+
+# Test DSN connection
+isql -v PostgreSQL-Production
 ```
 
-## Rootless Podman Setup
+**Common issues:**
+- Driver not found - Check `/etc/odbcinst.ini` paths
+- DSN not found - Check `/app/odbc/odbc.ini` configuration
+- Connection refused - Verify host/port in DSN settings
 
-Podman supports rootless containers out of the box. The Dockerfile creates a non-root `app` user (UID 1000).
+### Database Connection Issues
 
-### Enable Rootless Podman
-
+**Check PostgreSQL status:**
 ```bash
-# Install podman (varies by OS)
-# Fedora/RHEL
-sudo dnf install podman
-
-# Ubuntu/Debian
-sudo apt install podman
-
-# Enable lingering for your user (allows services to run after logout)
-loginctl enable-linger $USER
+docker-compose exec postgres pg_isready -U postgres
 ```
 
-### Run Rootless
-
-All the commands above work the same in rootless mode. Podman automatically maps user namespaces.
-
-## Performance Tuning
-
-### Database Connection Pool
-
-Adjust `POOL_SIZE` based on your workload:
-- Light usage: 5-10 connections
-- Medium usage: 10-20 connections
-- Heavy usage: 20-50 connections
-
-### Oban Workers
-
-Tune worker counts in `OBAN_QUEUES`:
-```bash
-OBAN_QUEUES="default:10,reconciliation:20"
+**Check DATABASE_URL format:**
+```
+ecto://username:password@hostname:port/database
 ```
 
-More workers = more concurrent reconciliation jobs, but higher resource usage.
+### Performance Issues
 
-## Systemd Service (Podman)
-
-For production Podman deployments, generate systemd services:
-
+**Check container resources:**
 ```bash
-# Generate service files
-podman generate systemd --new --files --name twinspin-pod
+docker stats twinspin-app
+```
 
-# Move to systemd directory
-mkdir -p ~/.config/systemd/user/
-mv *.service ~/.config/systemd/user/
+**Recommendations:**
+- Increase `POOL_SIZE` for high concurrency
+- Scale horizontally with `--scale app=N`
+- Use external PostgreSQL for better performance
+- Add Redis for caching (future enhancement)
 
-# Enable and start
-systemctl --user enable --now pod-twinspin-pod.service
-systemctl --user enable --now container-twinspin-app.service
-systemctl --user enable --now container-twinspin-db.service
+### Migration Failures
+
+**View migration status:**
+```bash
+docker-compose exec app bin/twinspin eval "Ecto.Migrator.migrations(Twinspin.Repo)"
+```
+
+**Force migration:**
+```bash
+docker-compose exec app bin/twinspin eval "Twinspin.Release.migrate"
+```
+
+## Security Best Practices
+
+1. **Never commit sensitive data** - Use environment variables or Docker secrets
+2. **Run as non-root** - Container runs as UID 1000 (already configured)
+3. **Keep base images updated** - Rebuild regularly with `--no-cache`
+4. **Use TLS** - Always deploy behind HTTPS reverse proxy
+5. **Restrict network access** - Use firewall rules or Docker networks
+6. **Rotate secrets** - Change `SECRET_KEY_BASE` periodically
+7. **Audit ODBC configs** - Never store passwords in `odbc.ini` for production
+
+## Support
+
+For issues or questions:
+- Check application logs: `docker-compose logs -f app`
+- Review this documentation
+- Check container health: `docker ps`
+
+## License
+
+TwinSpin - Database Reconciliation Platform
+
