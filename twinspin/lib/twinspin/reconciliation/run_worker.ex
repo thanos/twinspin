@@ -35,8 +35,11 @@ defmodule Twinspin.Reconciliation.RunWorker do
 
   @impl true
   def init(run_id) do
-    # Register with Registry for lookups
-    {:ok, _} = Registry.register(Twinspin.RunRegistry, run_id, nil)
+    # Register with Registry for lookups (handle already registered)
+    case Registry.register(Twinspin.RunRegistry, run_id, nil) do
+      {:ok, _} -> :ok
+      {:error, {:already_registered, _pid}} -> :ok
+    end
 
     run = load_run(run_id)
     job = load_job(run.reconciliation_job_id)
