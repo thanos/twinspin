@@ -4,7 +4,8 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
 
   alias Twinspin.Reconciliation.{
     Job,
-    Run
+    Run,
+    Partition
   }
 
   import Ecto.Query
