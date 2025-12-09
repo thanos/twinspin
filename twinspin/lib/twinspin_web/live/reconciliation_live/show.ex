@@ -27,6 +27,8 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
      |> assign(:runs_empty?, job.reconciliation_runs == [])
      |> assign(:show_discrepancy_modal, false)
      |> assign(:selected_partition, nil)
+     |> assign(:processing_partitions, %{})
+     |> assign(:progress_stats, %{})
      |> stream(:runs, job.reconciliation_runs)}
   end
 
@@ -127,6 +129,33 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   @impl true
   def handle_info({:run_deleted, run}, socket) do
     {:noreply, stream_delete(socket, :runs, run)}
+  end
+
+  @impl true
+  def handle_info({:partition_update, partition_info}, socket) do
+    processing_partitions = socket.assigns.processing_partitions
+
+    updated_partitions =
+      case partition_info.event_type do
+        "started" ->
+          Map.put(processing_partitions, partition_info.partition_id, partition_info)
+
+        "completed" ->
+          Map.delete(processing_partitions, partition_info.partition_id)
+
+        "split" ->
+          Map.put(processing_partitions, partition_info.partition_id, partition_info)
+
+        _ ->
+          processing_partitions
+      end
+
+    {:noreply, assign(socket, :processing_partitions, updated_partitions)}
+  end
+
+  @impl true
+  def handle_info({:progress_update, progress}, socket) do
+    {:noreply, assign(socket, :progress_stats, progress)}
   end
 
   @impl true
@@ -240,10 +269,27 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
     end
   end
 
+  defp format_eta(nil), do: "Calculating..."
+
+  defp format_eta(eta_seconds) when eta_seconds < 60, do: "~#{eta_seconds}s"
+
+  defp format_eta(eta_seconds) when eta_seconds < 3600 do
+    minutes = div(eta_seconds, 60)
+    seconds = rem(eta_seconds, 60)
+    "~#{minutes}m #{seconds}s"
+  end
+
+  defp format_eta(eta_seconds) do
+    hours = div(eta_seconds, 3600)
+    minutes = div(rem(eta_seconds, 3600), 60)
+    "~#{hours}h #{minutes}m"
+  end
+
   defp status_badge_class("pending"), do: "bg-gray-900 text-gray-300"
   defp status_badge_class("running"), do: "bg-blue-900 text-blue-300"
   defp status_badge_class("completed"), do: "bg-emerald-900 text-emerald-300"
   defp status_badge_class("failed"), do: "bg-red-900 text-red-300"
+  defp status_badge_class("processing"), do: "bg-blue-900 text-blue-300 animate-pulse"
   defp status_badge_class(_), do: "bg-gray-900 text-gray-300"
 
   defp progress_percentage(0, _), do: 0
