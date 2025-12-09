@@ -122,32 +122,7 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
         :source_database_connection,
         :target_database_connection,
         :table_reconciliations,
-        reconciliation_runs:
-          from(r in Run,
-            order_by: [desc: r.inserted_at],
-            preload: [
-              partitions:
-                from(p in Partition,
-                  where: is_nil(p.parent_partition_id),
-                  order_by: [asc: p.partition_key],
-                  preload: [
-                    :discrepancy_results,
-                    child_partitions:
-                      from(cp in Partition,
-                        order_by: [asc: cp.partition_key],
-                        preload: [
-                          :discrepancy_results,
-                          child_partitions:
-                            from(cp2 in Partition,
-                              order_by: [asc: cp2.partition_key],
-                              preload: [:discrepancy_results]
-                            )
-                        ]
-                      )
-                  ]
-                )
-            ]
-          )
+        reconciliation_runs: from(r in Run, order_by: [desc: r.inserted_at])
       ])
 
     # Manually preload nested partitions with Repo.preload for deeper nesting
