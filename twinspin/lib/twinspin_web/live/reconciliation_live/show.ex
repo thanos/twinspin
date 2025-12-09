@@ -24,6 +24,8 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
      |> assign(:page_title, job.name)
      |> assign(:job, job)
      |> assign(:runs_empty?, job.reconciliation_runs == [])
+     |> assign(:show_discrepancy_modal, false)
+     |> assign(:selected_partition, nil)
      |> stream(:runs, job.reconciliation_runs)}
   end
 
