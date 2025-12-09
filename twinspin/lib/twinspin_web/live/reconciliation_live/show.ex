@@ -47,8 +47,7 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
     case create_run(job.id) do
       {:ok, run} ->
         # Enqueue Oban job to process run in background
-        %Twinspin.Reconciliation.ReconciliationWorker{}
-        |> Twinspin.Reconciliation.ReconciliationWorker.new(%{"run_id" => run.id})
+        Twinspin.Reconciliation.ReconciliationWorker.new(%{"run_id" => run.id})
         |> Oban.insert()
 
         Phoenix.PubSub.broadcast(
