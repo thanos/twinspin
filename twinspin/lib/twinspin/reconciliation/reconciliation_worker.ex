@@ -332,9 +332,9 @@ defmodule Twinspin.Reconciliation.ReconciliationWorker do
     # Calculate processing rate
     rows_per_second =
       if elapsed_seconds > 0 do
-        run.processed_rows / elapsed_seconds
+        run.processed_rows * 1.0 / elapsed_seconds
       else
-        0
+        0.0
       end
 
     # Calculate ETA
