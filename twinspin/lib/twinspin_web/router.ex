@@ -28,9 +28,6 @@ defmodule TwinspinWeb.Router do
   end
 
   # Authenticated routes
-  # Oban Web Dashboard (outside TwinspinWeb scope)
-  forward "/oban", Oban.Web.Plug, oban: Oban
-
   scope "/", TwinspinWeb do
     # on_mount will be added later for authentication
     live_session :require_authenticated_user, on_mount: [] do
