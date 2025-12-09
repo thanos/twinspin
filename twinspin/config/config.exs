@@ -26,7 +26,7 @@ config :twinspin, TwinspinWeb.Endpoint,
 config :twinspin, Oban,
   repo: Twinspin.Repo,
   prefix: false,
-  notifier: Oban.Notifiers.PG,
+  notifier: {Oban.Notifiers.PG, []},
   queues: [reconciliation: 10],
   plugins: [Oban.Plugins.Pruner]
 
