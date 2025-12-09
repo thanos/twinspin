@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: twinspin-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: twinspin_prod
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - twinspin-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twinspin-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Database configuration
+      DATABASE_URL: "ecto://postgres:postgres@db:5432/twinspin_prod"
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: twinspin_prod
+      
+      # Phoenix configuration
+      SECRET_KEY_BASE: "changeme-generate-with-mix-phx-gen-secret"
+      PHX_HOST: localhost
+      PHX_SERVER: "true"
+      PORT: 4000
+      
+      # Oban configuration
+      OBAN_QUEUES: "default:10,reconciliation:5"
+      
+      # Pool size
+      POOL_SIZE: 10
+    ports:
+      - "4000:4000"
+    volumes:
+      # Optional: mount for development hot-reloading (comment out for production)
+      # - ./lib:/app/lib
+      # - ./assets:/app/assets
+      - app_data:/app/tmp
+    networks:
+      - twinspin-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+  app_data:
+    driver: local
+
+networks:
+  twinspin-network:
+    driver: bridge
+
