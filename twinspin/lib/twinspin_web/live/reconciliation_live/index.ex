@@ -97,7 +97,7 @@ defmodule TwinspinWeb.ReconciliationLive.Index do
 
   defp list_jobs do
     Job
-    |> Repo.preload([
+    |> preload([
       :source_database_connection,
       :target_database_connection,
       reconciliation_runs:
