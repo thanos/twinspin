@@ -57,12 +57,16 @@ defmodule TwinspinWeb.ReconciliationLive.IndexTest do
 
       {:ok, view, _html} = live(conn, ~p"/")
 
-      html =
+      # Perform the click, which should trigger a redirect
+      {:ok, _redirect_conn, redirect_path} =
         view
         |> element("a[href='/jobs/#{job.id}']")
         |> render_click()
 
-      assert html =~ "Test Job"
+      # Follow the redirect to the job detail page
+      {:ok, _job_view, job_html} = live(conn, redirect_path)
+
+      assert job_html =~ "Test Job"
     end
 
     test "can delete a job", %{conn: conn} do
