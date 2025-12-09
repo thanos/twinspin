@@ -23,9 +23,12 @@ defmodule Twinspin.Reconciliation.ReconciliationWorker do
     # Update run status to running
     update_run_status(run, job, "running")
 
+    # Track start time for ETA calculation
+    start_time = System.monotonic_time(:second)
+
     # Process each table reconciliation
     Enum.each(job.table_reconciliations, fn table_rec ->
-      process_table_reconciliation(run, job, table_rec)
+      process_table_reconciliation(run, job, table_rec, start_time)
     end)
 
     # Mark run as completed
@@ -62,14 +65,14 @@ defmodule Twinspin.Reconciliation.ReconciliationWorker do
     ])
   end
 
-  defp process_table_reconciliation(run, job, table_rec) do
+  defp process_table_reconciliation(run, job, table_rec, start_time) do
     Logger.info("Processing table: #{table_rec.table_name}")
 
     # Create root partition for this table
     root_partition = create_root_partition(run, table_rec)
 
     # Process the root partition recursively
-    process_partition_tree(run, job, root_partition, table_rec, 0)
+    process_partition_tree(run, job, root_partition, table_rec, 0, start_time)
   end
 
   defp create_root_partition(run, table_rec) do
@@ -94,11 +97,14 @@ defmodule Twinspin.Reconciliation.ReconciliationWorker do
     partition
   end
 
-  defp process_partition_tree(run, job, partition, table_rec, depth) do
+  defp process_partition_tree(run, job, partition, table_rec, depth, start_time) do
     Logger.debug("Processing partition #{partition.partition_key} at depth #{depth}")
 
-    # Update partition status
+    # Update partition status to processing
     partition = update_partition_status(partition, "processing")
+
+    # Broadcast partition started
+    broadcast_partition_update(run, job, partition, "started")
 
     # Check if we need to split this partition
     should_split =
@@ -109,12 +115,18 @@ defmodule Twinspin.Reconciliation.ReconciliationWorker do
       # Split partition and process children
       children = split_partition(run, partition, table_rec)
 
+      # Broadcast partition split event
+      broadcast_partition_update(run, job, partition, "split", %{
+        children_count: length(children)
+      })
+
       Enum.each(children, fn child ->
-        process_partition_tree(run, job, child, table_rec, depth + 1)
+        process_partition_tree(run, job, child, table_rec, depth + 1, start_time)
       end)
 
       # Mark parent as completed after children are processed
-      update_partition_status(partition, "completed")
+      partition = update_partition_status(partition, "completed")
+      broadcast_partition_update(run, job, partition, "completed")
     else
       # Leaf partition - perform actual reconciliation
       discrepancies = reconcile_partition(job, partition, table_rec)
@@ -122,8 +134,13 @@ defmodule Twinspin.Reconciliation.ReconciliationWorker do
       # Update counters
       update_run_progress(run, partition.row_count_estimate, length(discrepancies))
 
+      # Calculate and broadcast progress with ETA
+      fresh_run = Repo.get!(Run, run.id)
+      broadcast_progress_update(fresh_run, job, start_time)
+
       # Mark partition as completed
-      update_partition_status(partition, "completed")
+      partition = update_partition_status(partition, "completed")
+      broadcast_partition_update(run, job, partition, "completed")
     end
 
     # Broadcast updates after processing
@@ -288,6 +305,62 @@ defmodule Twinspin.Reconciliation.ReconciliationWorker do
       Twinspin.PubSub,
       "reconciliation_runs:#{job.id}",
       {:run_updated, fresh_run}
+    )
+  end
+
+  defp broadcast_partition_update(run, job, partition, event_type, metadata \\ %{}) do
+    Phoenix.PubSub.broadcast(
+      Twinspin.PubSub,
+      "reconciliation_runs:#{job.id}",
+      {:partition_update,
+       %{
+         run_id: run.id,
+         partition_id: partition.id,
+         partition_key: partition.partition_key,
+         status: partition.status,
+         depth: partition.depth,
+         event_type: event_type,
+         timestamp: DateTime.utc_now()
+       }}
+    )
+  end
+
+  defp broadcast_progress_update(run, job, start_time) do
+    current_time = System.monotonic_time(:second)
+    elapsed_seconds = current_time - start_time
+
+    # Calculate processing rate
+    rows_per_second =
+      if elapsed_seconds > 0 do
+        run.processed_rows / elapsed_seconds
+      else
+        0
+      end
+
+    # Calculate ETA
+    remaining_rows = run.total_rows - run.processed_rows
+
+    eta_seconds =
+      if rows_per_second > 0 do
+        round(remaining_rows / rows_per_second)
+      else
+        nil
+      end
+
+    Phoenix.PubSub.broadcast(
+      Twinspin.PubSub,
+      "reconciliation_runs:#{job.id}",
+      {:progress_update,
+       %{
+         run_id: run.id,
+         processed_rows: run.processed_rows,
+         total_rows: run.total_rows,
+         discrepancies_found: run.discrepancies_found,
+         rows_per_second: Float.round(rows_per_second, 2),
+         eta_seconds: eta_seconds,
+         elapsed_seconds: elapsed_seconds,
+         timestamp: DateTime.utc_now()
+       }}
     )
   end
 end
