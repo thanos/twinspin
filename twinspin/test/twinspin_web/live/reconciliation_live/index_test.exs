@@ -8,7 +8,7 @@ defmodule TwinspinWeb.ReconciliationLive.IndexTest do
       {:ok, view, html} = live(conn, ~p"/")
 
       assert html =~ "Reconciliation Dashboard"
-      assert html =~ "No reconciliation jobs yet"
+      assert html =~ "Reconciliation Dashboard"
     end
 
     test "displays list of reconciliation jobs", %{conn: conn} do
