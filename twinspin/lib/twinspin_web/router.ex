@@ -14,13 +14,25 @@ defmodule TwinspinWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Public routes (e.g., landing page, login, registration)
   scope "/", TwinspinWeb do
     pipe_through :browser
 
-    live "/", ReconciliationLive.Index, :index
-    live "/connections", DatabaseConnectionLive.Index, :index
-    live "/jobs/:id", ReconciliationLive.Show, :show
-    live "/jobs/:id/edit", ReconciliationLive.Edit, :edit
+    # Removed the old root route
+    # live "/", ReconciliationLive.Index, :index
+  end
+
+  # Authenticated routes
+  scope "/", TwinspinWeb do
+    pipe_through :browser
+
+    # on_mount will be added later for authentication
+    live_session :require_authenticated_user, on_mount: [] do
+      live "/settings", SettingsLive, :index
+      live "/connections", DatabaseConnectionLive.Index, :index
+      live "/jobs/:id", ReconciliationLive.Show, :show
+      live "/jobs/:id/edit", ReconciliationLive.Edit, :edit
+    end
   end
 
   # Other scopes may use custom stacks.
