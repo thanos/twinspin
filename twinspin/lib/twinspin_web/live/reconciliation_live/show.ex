@@ -99,8 +99,11 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
      |> assign(:show_discrepancy_modal, false)}
   end
 
+  @impl true
   def handle_event("export_discrepancies_csv", %{"partition_id" => partition_id}, socket) do
-    partition = Reconciliation.get_partition_with_discrepancies(partition_id)
+    partition =
+      Repo.get!(Partition, partition_id)
+      |> Repo.preload([:discrepancy_results, :table_reconciliation])
 
     csv_content = generate_discrepancies_csv(partition)
 
@@ -113,7 +116,6 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
      })}
   end
 
-  @impl true
   def handle_event("export_discrepancies", %{"partition_id" => partition_id}, socket) do
     partition = Repo.get!(Partition, partition_id) |> Repo.preload(:discrepancy_results)
 
@@ -342,57 +344,64 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
       value
     end
   end
-end
 
-defp generate_discrepancies_csv(partition) do
-  headers = ["Table", "Primary Key", "Discrepancy Type", "Field", "Source Value", "Target Value"]
+  defp generate_discrepancies_csv(partition) do
+    headers = [
+      "Table",
+      "Primary Key",
+      "Discrepancy Type",
+      "Field",
+      "Source Value",
+      "Target Value"
+    ]
 
-  rows =
-    Enum.flat_map(partition.discrepancy_results, fn discrepancy ->
-      case discrepancy.field_diffs do
-        nil ->
-          # No field diffs, just output basic info
-          [
+    rows =
+      Enum.flat_map(partition.discrepancy_results, fn discrepancy ->
+        case discrepancy.field_diffs do
+          nil ->
+            # No field diffs, just output basic info
             [
-              partition.table_reconciliation.table_name,
-              inspect(discrepancy.row_identifier),
-              discrepancy.discrepancy_type,
-              "",
-              "",
-              ""
+              [
+                partition.table_reconciliation.table_name,
+                inspect(discrepancy.row_identifier),
+                discrepancy.discrepancy_type,
+                "",
+                "",
+                ""
+              ]
             ]
-          ]
 
-        field_diffs ->
-          # Create a row for each field difference
-          Enum.map(field_diffs, fn {field, diffs} ->
-            [
-              partition.table_reconciliation.table_name,
-              inspect(discrepancy.row_identifier),
-              discrepancy.discrepancy_type,
-              field,
-              inspect(diffs["source"]),
-              inspect(diffs["target"])
-            ]
-          end)
-      end
+          field_diffs ->
+            # Create a row for each field difference
+            Enum.map(field_diffs, fn {field, diffs} ->
+              [
+                partition.table_reconciliation.table_name,
+                inspect(discrepancy.row_identifier),
+                discrepancy.discrepancy_type,
+                field,
+                inspect(diffs["source"]),
+                inspect(diffs["target"])
+              ]
+            end)
+        end
+      end)
+
+    # Convert to CSV format
+    ([headers] ++ rows)
+    |> Enum.map(fn row ->
+      Enum.map(row, &escape_csv_field/1)
+      |> Enum.join(",")
     end)
+    |> Enum.join("\n")
+  end
 
-  # Convert to CSV format
-  ([headers] ++ rows)
-  |> Enum.map(fn row ->
-    Enum.map(row, &escape_csv_field/1)
-    |> Enum.join(",")
-  end)
-  |> Enum.join("\n")
-end
+  defp escape_csv_field(field) do
+    field = to_string(field)
 
-defp escape_csv_field(field) do
-  field = to_string(field)
-
-  if String.contains?(field, [",", "\"", "\n"]) do
-    "\"" <> String.replace(field, "\"", "\"\"") <> "\""
-  else
-    field
+    if String.contains?(field, [",", "\"", "\n"]) do
+      "\"" <> String.replace(field, "\"", "\"\"") <> "\""
+    else
+      field
+    end
   end
 end
