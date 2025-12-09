@@ -56,7 +56,6 @@ defmodule TwinspinWeb.Layouts do
             <div class="flex items-center gap-1">
               <.nav_link href="/" text="Connections" />
               <.nav_link href="/settings" text="Settings" icon="hero-cog-6-tooth" />
-              <.nav_link href="/oban" text="Jobs" icon="hero-queue-list" />
             </div>
           </div>
         </div>
