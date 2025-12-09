@@ -18,6 +18,7 @@ defmodule TwinspinWeb.Router do
     pipe_through :browser
 
     live "/", ReconciliationLive.Index, :index
+    live "/connections", DatabaseConnectionLive.Index, :index
   end
 
   # Other scopes may use custom stacks.
