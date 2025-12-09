@@ -74,6 +74,24 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   end
 
   @impl true
+  def handle_event("show_discrepancies", %{"partition_id" => partition_id}, socket) do
+    partition = Repo.get!(Partition, partition_id)
+    partition_with_discrepancies = Repo.preload(partition, :discrepancy_results)
+
+    {:noreply,
+     socket
+     |> assign(:selected_partition, partition_with_discrepancies)
+     |> assign(:show_discrepancy_modal, true)}
+  end
+
+  @impl true
+  def handle_event("close_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_discrepancy_modal, false)}
+  end
+
+  @impl true
   def handle_info({:run_created, run}, socket) do
     {:noreply,
      socket
