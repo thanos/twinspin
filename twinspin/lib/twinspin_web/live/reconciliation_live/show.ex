@@ -62,6 +62,28 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   end
 
   @impl true
+  @impl true
+  def handle_event("start_run", _params, socket) do
+    job = socket.assigns.job
+
+    case create_run(job.id) do
+      {:ok, run} ->
+        Phoenix.PubSub.broadcast(
+          Twinspin.PubSub,
+          "reconciliation_runs:#{job.id}",
+          {:run_created, run}
+        )
+
+        {:noreply,
+         socket
+         |> assign(:runs_empty?, false)
+         |> put_flash(:info, "Run started successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to start run")}
+    end
+  end
+
   def handle_event("delete_run", %{"id" => id}, socket) do
     run = Repo.get!(Run, id)
     {:ok, _} = Repo.delete(run)
@@ -145,6 +167,16 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
 
   @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
+
+  defp create_run(job_id) do
+    %Run{}
+    |> Run.changeset(%{
+      reconciliation_job_id: job_id,
+      status: "pending",
+      started_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.insert()
+  end
 
   defp get_job!(id) do
     job =
