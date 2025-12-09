@@ -25,9 +25,9 @@ config :twinspin, TwinspinWeb.Endpoint,
 # Configure Oban
 config :twinspin, Oban,
   repo: Twinspin.Repo,
-  plugins: [
-    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
-    {Oban.Plugins.Cron, crontab: []}
+  engine: Oban.Engines.Basic,
+  queues: [reconciliation: 10],
+  plugins: [Oban.Plugins.Pruner]
   ],
   queues: [reconciliation: 10]
 
