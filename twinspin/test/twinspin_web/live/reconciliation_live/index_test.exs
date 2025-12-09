@@ -85,7 +85,7 @@ defmodule TwinspinWeb.ReconciliationLive.IndexTest do
       {:ok, view, _html} = live(conn, ~p"/")
 
       assert has_element?(view, "h3", "No reconciliation jobs yet")
-      assert has_element?(view, "p", "Create your first reconciliation job")
+      assert has_element?(view, "p", "Create your first reconciliation job to get started")
     end
 
     test "displays multiple jobs in order", %{conn: conn} do
