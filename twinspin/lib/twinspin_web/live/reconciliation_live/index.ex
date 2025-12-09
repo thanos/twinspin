@@ -96,8 +96,12 @@ defmodule TwinspinWeb.ReconciliationLive.Index do
   end
 
   defp list_jobs do
-    Job
-    |> preload([
+    jobs =
+      Job
+      |> order_by([j], desc: j.inserted_at)
+      |> Repo.all()
+
+    Repo.preload(jobs, [
       :source_database_connection,
       :target_database_connection,
       reconciliation_runs:
@@ -106,8 +110,6 @@ defmodule TwinspinWeb.ReconciliationLive.Index do
           limit: 1
         )
     ])
-    |> order_by([j], desc: j.inserted_at)
-    |> Repo.all()
   end
 
   defp create_job(attrs) do
