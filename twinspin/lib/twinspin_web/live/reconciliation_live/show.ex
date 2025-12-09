@@ -166,6 +166,24 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   end
 
   @impl true
+  def handle_info({:run_created, run}, socket) do
+    {:noreply,
+     socket
+     |> assign(:runs_empty?, false)
+     |> stream_insert(:runs, run, at: 0)}
+  end
+
+  @impl true
+  def handle_info({:run_updated, run}, socket) do
+    {:noreply, stream_insert(socket, :runs, run)}
+  end
+
+  @impl true
+  def handle_info({:run_deleted, run}, socket) do
+    {:noreply, stream_delete(socket, :runs, run)}
+  end
+
+  @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   defp create_run(job_id) do
