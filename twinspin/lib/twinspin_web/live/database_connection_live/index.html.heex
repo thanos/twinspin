@@ -1,0 +1,163 @@
+<Layouts.app flash={@flash}>
+  <div class="min-h-screen bg-gray-950 text-gray-100">
+    <div class="mx-auto max-w-7xl px-4 py-8">
+      <div class="mb-8 flex items-center justify-between border-b border-gray-800 pb-6">
+        <div>
+          <h1 class="font-mono text-3xl font-bold text-cyan-400">Database Connections</h1>
+          <p class="mt-2 font-mono text-sm text-gray-400">
+            Manage source and target database connection strings
+          </p>
+        </div>
+        <button
+          phx-click="toggle_form"
+          class="rounded-lg bg-cyan-600 px-4 py-2 font-mono text-sm font-semibold text-white transition-colors hover:bg-cyan-500"
+        >
+          {if @show_form, do: "✕ Cancel", else: "+ New Connection"}
+        </button>
+      </div>
+
+      <%= if @show_form do %>
+        <div class="mb-8 rounded-lg border border-gray-800 bg-gray-900 p-6">
+          <h2 class="mb-4 font-mono text-lg font-semibold text-cyan-400">
+            {if @editing_connection_id, do: "Edit Connection", else: "New Connection"}
+          </h2>
+          <.form
+            for={@connection_form}
+            id="connection-form"
+            phx-change="validate"
+            phx-submit="save"
+            class="space-y-4"
+          >
+            <div>
+              <.input
+                field={@connection_form[:name]}
+                type="text"
+                label="Connection Name"
+                placeholder="Production DB2"
+                class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2 font-mono text-sm text-gray-100 placeholder-gray-600 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                error_class="border-red-500 focus:border-red-500 focus:ring-red-500"
+              />
+            </div>
+
+            <div>
+              <.input
+                field={@connection_form[:db_type]}
+                type="select"
+                label="Database Type"
+                options={[
+                  {"DB2", "db2"},
+                  {"Oracle", "oracle"},
+                  {"PostgreSQL", "postgres"},
+                  {"MySQL", "mysql"}
+                ]}
+                class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2 font-mono text-sm text-gray-100 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                error_class="border-red-500 focus:border-red-500 focus:ring-red-500"
+              />
+            </div>
+
+            <div>
+              <.input
+                field={@connection_form[:connection_string]}
+                type="textarea"
+                label="Connection String"
+                placeholder="DATABASE=PRODDB;HOSTNAME=db2.example.com;PORT=50000;UID=admin;PWD=***"
+                rows="3"
+                class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2 font-mono text-sm text-gray-100 placeholder-gray-600 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                error_class="border-red-500 focus:border-red-500 focus:ring-red-500"
+              />
+            </div>
+
+            <div>
+              <.input
+                field={@connection_form[:description]}
+                type="textarea"
+                label="Description (optional)"
+                placeholder="Production database on mainframe"
+                rows="2"
+                class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2 font-mono text-sm text-gray-100 placeholder-gray-600 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                error_class="border-red-500 focus:border-red-500 focus:ring-red-500"
+              />
+            </div>
+
+            <div class="flex justify-end">
+              <button
+                type="submit"
+                class="rounded-lg bg-cyan-600 px-6 py-2 font-mono text-sm font-semibold text-white transition-colors hover:bg-cyan-500"
+              >
+                {if @editing_connection_id, do: "Update Connection", else: "Create Connection"}
+              </button>
+            </div>
+          </.form>
+        </div>
+      <% end %>
+
+      <%= if @connections_empty? do %>
+        <div class="rounded-lg border border-gray-800 bg-gray-900 p-12 text-center">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800">
+            <span class="font-mono text-2xl text-gray-600">⚡</span>
+          </div>
+          <h3 class="mb-2 font-mono text-lg font-semibold text-gray-300">No connections yet</h3>
+          <p class="mb-6 font-mono text-sm text-gray-500">
+            Create your first database connection to get started
+          </p>
+          <button
+            phx-click="toggle_form"
+            class="rounded-lg bg-cyan-600 px-4 py-2 font-mono text-sm font-semibold text-white transition-colors hover:bg-cyan-500"
+          >
+            + New Connection
+          </button>
+        </div>
+      <% else %>
+        <div class="space-y-4">
+          <div
+            :for={{id, connection} <- @streams.connections}
+            id={id}
+            class="rounded-lg border border-gray-800 bg-gray-900 p-6 transition-colors hover:border-gray-700"
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="mb-2 flex items-center gap-3">
+                  <h3 class="font-mono text-lg font-semibold text-gray-100">
+                    {connection.name}
+                  </h3>
+                  <span class={"rounded-full px-3 py-1 font-mono text-xs font-semibold uppercase #{db_type_badge_class(connection.db_type)}"}>
+                    {connection.db_type}
+                  </span>
+                </div>
+
+                <%= if connection.description do %>
+                  <p class="mb-3 font-mono text-sm text-gray-400">{connection.description}</p>
+                <% end %>
+
+                <div class="rounded-lg border border-gray-800 bg-gray-950 p-3">
+                  <p class="font-mono text-xs text-gray-500">Connection String</p>
+                  <code class="mt-1 block font-mono text-sm text-gray-300">
+                    {connection.connection_string}
+                  </code>
+                </div>
+              </div>
+
+              <div class="ml-4 flex gap-2">
+                <button
+                  phx-click="edit"
+                  phx-value-id={connection.id}
+                  class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1 font-mono text-xs text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-700"
+                >
+                  Edit
+                </button>
+                <button
+                  phx-click="delete"
+                  phx-value-id={connection.id}
+                  data-confirm="Are you sure you want to delete this connection?"
+                  class="rounded-lg border border-red-900 bg-red-950 px-3 py-1 font-mono text-xs text-red-300 transition-colors hover:border-red-800 hover:bg-red-900"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>
