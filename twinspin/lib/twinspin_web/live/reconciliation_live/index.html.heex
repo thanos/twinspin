@@ -180,9 +180,12 @@
               </div>
 
               <div class="ml-4 flex gap-2">
-                <button class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1 font-mono text-xs text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-700">
+                <a
+                  href={~p"/jobs/#{job.id}"}
+                  class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1 font-mono text-xs text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-700"
+                >
                   View
-                </button>
+                </a>
                 <button
                   phx-click="delete"
                   phx-value-id={job.id}
