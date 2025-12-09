@@ -12,7 +12,7 @@ defmodule Twinspin.TestHelpers do
   def create_connection(attrs \\ %{}) do
     default_attrs = %{
       name: "Test Connection",
-      db_type: "postgresql",
+      db_type: "postgres",
       connection_string: "postgresql://user:pass@localhost:5432/test_db",
       description: "Test database connection"
     }
