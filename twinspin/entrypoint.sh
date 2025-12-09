@@ -1,34 +1,40 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
+echo "====================================="
+echo "TwinSpin Docker Container Starting"
+echo "====================================="
+
 # Wait for PostgreSQL to be ready
-echo "Waiting for PostgreSQL to be ready..."
-until pg_isready -h "${DATABASE_HOST:-db}" -p "${DATABASE_PORT:-5432}" -U "${DATABASE_USER:-postgres}" -q; do
+echo "Waiting for PostgreSQL..."
+while ! pg_isready -h postgres -U postgres -q; do
   echo "PostgreSQL is unavailable - sleeping"
   sleep 1
 done
 
 echo "PostgreSQL is ready!"
 
-# Run migrations
+# Run database migrations
 echo "Running database migrations..."
-/app/bin/twinspin eval "Twinspin.Release.migrate"
+bin/twinspin eval "Twinspin.Release.migrate"
 
 # Create initial settings if needed
-echo "Ensuring initial settings exist..."
-/app/bin/twinspin eval "
-case Twinspin.Repo.get(Twinspin.Settings.Settings, 1) do
-  nil ->
-    IO.puts(\"Creating initial settings...\")
-    %Twinspin.Settings.Settings{id: 1, brand_name: \"TwinSpin\"}
-    |> Twinspin.Repo.insert!()
-    IO.puts(\"Initial settings created\")
-  _ ->
-    IO.puts(\"Settings already exist\")
-end
+echo "Creating initial settings..."
+bin/twinspin eval "
+  case Twinspin.Repo.get(Twinspin.Settings, 1) do
+    nil ->
+      %Twinspin.Settings{id: 1, brand_name: \"TwinSpin\"}
+      |> Twinspin.Repo.insert!()
+      IO.puts(\"Initial settings created\")
+    _ ->
+      IO.puts(\"Settings already exist\")
+  end
 "
 
-echo "Starting TwinSpin..."
-# Execute the CMD passed to the container
+echo "====================================="
+echo "Starting TwinSpin Application"
+echo "====================================="
+
+# Execute the main command
 exec "$@"
 
