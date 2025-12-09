@@ -15,11 +15,11 @@ defmodule TwinspinWeb.Router do
   end
 
   # Public routes (e.g., landing page, login, registration)
+  # Oban Web Dashboard (outside TwinspinWeb scope)
+  forward "/oban", Oban.Web.Router
+
   scope "/", TwinspinWeb do
     pipe_through :browser
-
-    # Oban Web Dashboard
-    forward "/oban", Oban.Web.Router
 
     # live "/", DatabaseConnectionLive.Index, :index
 
@@ -28,6 +28,9 @@ defmodule TwinspinWeb.Router do
   end
 
   # Authenticated routes
+  # Oban Web Dashboard (outside TwinspinWeb scope)
+  forward "/oban", Oban.Web.Router
+
   scope "/", TwinspinWeb do
     # on_mount will be added later for authentication
     live_session :require_authenticated_user, on_mount: [] do
