@@ -7,20 +7,25 @@ Technical/developer-focused UI with monospace fonts, terminal aesthetics, and re
 ## Completed Steps
 - [x] Generate Phoenix LiveView project "twinspin"
 - [x] Create detailed plan.md
-- [ ] Start server for live development
+- [x] Start server for live development
+- [x] Replace home.html.heex with technical-themed static mockup
+- [x] Create Ecto schemas and migrations
+  - [x] ReconciliationJob schema with source/target configs
+  - [x] Partition schema with tree structure support
+  - [x] DiscrepancyResult schema for tracking differences
 
 ## Detailed Implementation Plan
 
-### Phase 1: Initial Setup & Static Mockup (Steps 3-4)
-- [ ] Start the Phoenix server to view progress
-- [ ] Replace home.html.heex with technical-themed static mockup
+### Phase 1: Initial Setup & Static Mockup ✓
+- [x] Start the Phoenix server to view progress
+- [x] Replace home.html.heex with technical-themed static mockup
   - Dark terminal-inspired color scheme
   - Monospace fonts for code/data display
   - Mock dashboard showing job queue, partition tree, diff viewer
   - Navigation for Jobs, Partitions, Results, Settings
 
-### Phase 2: Core Data Models (Steps 5-6)
-- [ ] Create Ecto schemas and migrations (2 steps combined)
+### Phase 2: Core Data Models ✓
+- [x] Create Ecto schemas and migrations (2 steps combined)
   - ReconciliationJob schema
     - source_db (type, connection_string, table, columns)
     - target_db (type, connection_string, table, columns)
@@ -40,7 +45,7 @@ Technical/developer-focused UI with monospace fonts, terminal aesthetics, and re
     - row_identifier (JSON of key fields)
     - field_diffs (JSON of field-level differences)
 
-### Phase 3: Dashboard LiveView (Steps 7-9)
+### Phase 3: Dashboard LiveView (Steps 11-13)
 - [ ] Implement ReconciliationLive.Index (main dashboard)
   - Real-time job list with streams
   - PubSub for live status updates
@@ -54,7 +59,7 @@ Technical/developer-focused UI with monospace fonts, terminal aesthetics, and re
 - [ ] Wire up PubSub broadcasting for job status changes
   - Broadcast on job start, progress, completion
 
-### Phase 4: Job Detail View (Steps 10-11)
+### Phase 4: Job Detail View (Steps 14-15)
 - [ ] Implement ReconciliationLive.Show (job detail page)
   - Partition tree visualization (ASCII tree or nested divs)
   - Real-time progress tracking per partition
@@ -65,7 +70,7 @@ Technical/developer-focused UI with monospace fonts, terminal aesthetics, and re
   - Discrepancy table with syntax highlighting for diffs
   - Export results (CSV, JSON)
 
-### Phase 5: Design Integration (Steps 12-13)
+### Phase 5: Design Integration (Steps 16-17)
 - [ ] Update assets/css/app.css with technical theme
   - Dark terminal color palette
   - Monospace font stack (Fira Code, JetBrains Mono, Consolas)
@@ -77,7 +82,7 @@ Technical/developer-focused UI with monospace fonts, terminal aesthetics, and re
   - Add technical-themed header/nav
   - Integrate layouts seamlessly
 
-### Phase 6: Router & Testing (Steps 14-15)
+### Phase 6: Router & Testing (Step 18)
 - [ ] Update router with new routes
   - Replace placeholder "/" with ReconciliationLive.Index
   - Add "/jobs/:id" for ReconciliationLive.Show
@@ -86,7 +91,7 @@ Technical/developer-focused UI with monospace fonts, terminal aesthetics, and re
   - Test real-time updates
   - Check responsive design
 
-### Phase 7: Reserved for Debugging (Steps 16-18)
+### Phase 7: Reserved for Debugging (Steps 19-21)
 - [ ] 3 steps reserved for unexpected issues
 
 ## Key Technical Features
@@ -103,3 +108,4 @@ Technical/developer-focused UI with monospace fonts, terminal aesthetics, and re
 - Heroicons
 - SQLite (dev), PostgreSQL (production ready)
 - PubSub for real-time features
+
