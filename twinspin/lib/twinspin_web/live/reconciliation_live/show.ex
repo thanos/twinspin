@@ -5,7 +5,8 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   alias Twinspin.Reconciliation.{
     Job,
     Run,
-    Partition
+    Partition,
+    Engine
   }
 
   import Ecto.Query
@@ -45,29 +46,9 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
 
     case create_run(job.id) do
       {:ok, run} ->
-        Phoenix.PubSub.broadcast(
-          Twinspin.PubSub,
-          "reconciliation_runs:#{job.id}",
-          {:run_created, run}
-        )
+        # Start the background worker
+        {:ok, _pid} = Twinspin.Reconciliation.Engine.start_run(run.id)
 
-        {:noreply,
-         socket
-         |> assign(:runs_empty?, false)
-         |> put_flash(:info, "Run started successfully")}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to start run")}
-    end
-  end
-
-  @impl true
-  @impl true
-  def handle_event("start_run", _params, socket) do
-    job = socket.assigns.job
-
-    case create_run(job.id) do
-      {:ok, run} ->
         Phoenix.PubSub.broadcast(
           Twinspin.PubSub,
           "reconciliation_runs:#{job.id}",
@@ -87,6 +68,9 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   def handle_event("delete_run", %{"id" => id}, socket) do
     run = Repo.get!(Run, id)
     {:ok, _} = Repo.delete(run)
+
+    # Attempt to stop the worker if it's active
+    Twinspin.Reconciliation.Engine.stop_run(run.id)
 
     Phoenix.PubSub.broadcast(
       Twinspin.PubSub,
@@ -166,24 +150,6 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   end
 
   @impl true
-  def handle_info({:run_created, run}, socket) do
-    {:noreply,
-     socket
-     |> assign(:runs_empty?, false)
-     |> stream_insert(:runs, run, at: 0)}
-  end
-
-  @impl true
-  def handle_info({:run_updated, run}, socket) do
-    {:noreply, stream_insert(socket, :runs, run)}
-  end
-
-  @impl true
-  def handle_info({:run_deleted, run}, socket) do
-    {:noreply, stream_delete(socket, :runs, run)}
-  end
-
-  @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   defp create_run(job_id) do
@@ -248,16 +214,6 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
       end)
 
     Map.put(job, :reconciliation_runs, runs_with_partitions)
-  end
-
-  defp create_run(job_id) do
-    %Run{}
-    |> Run.changeset(%{
-      reconciliation_job_id: job_id,
-      status: "pending",
-      started_at: DateTime.utc_now() |> DateTime.truncate(:second)
-    })
-    |> Repo.insert()
   end
 
   defp format_timestamp(nil), do: "—"
