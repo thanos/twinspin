@@ -247,4 +247,35 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   defp progress_percentage(processed, total) do
     Float.round(processed / total * 100, 1)
   end
+
+  defp generate_discrepancy_csv(discrepancies) do
+    headers = "Type,Row Identifier,Field,Source Value,Target Value\n"
+
+    rows =
+      Enum.map(discrepancies, fn disc ->
+        row_id = inspect(disc.row_identifier)
+
+        if disc.field_diffs do
+          Enum.map(disc.field_diffs, fn {field, diffs} ->
+            source = escape_csv(inspect(diffs["source"]))
+            target = escape_csv(inspect(diffs["target"]))
+            "#{disc.discrepancy_type},#{row_id},#{field},#{source},#{target}"
+          end)
+          |> Enum.join("\n")
+        else
+          "#{disc.discrepancy_type},#{row_id},,,"
+        end
+      end)
+      |> Enum.join("\n")
+
+    headers <> rows
+  end
+
+  defp escape_csv(value) do
+    if String.contains?(value, [",", "\"", "\n"]) do
+      "\"" <> String.replace(value, "\"", "\"\"") <> "\""
+    else
+      value
+    end
+  end
 end
