@@ -94,6 +94,20 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   end
 
   @impl true
+  def handle_event("export_discrepancies", %{"partition_id" => partition_id}, socket) do
+    partition = Repo.get!(Partition, partition_id) |> Repo.preload(:discrepancy_results)
+
+    csv_content = generate_discrepancy_csv(partition.discrepancy_results)
+
+    filename =
+      "discrepancies_#{partition.partition_key}_#{DateTime.utc_now() |> DateTime.to_unix()}.csv"
+
+    {:noreply,
+     socket
+     |> push_event("download_csv", %{content: csv_content, filename: filename})}
+  end
+
+  @impl true
   def handle_info({:run_created, run}, socket) do
     {:noreply,
      socket
