@@ -90,8 +90,9 @@ defmodule TwinspinWeb.ReconciliationLive.ShowTest do
 
       {:ok, view, _html} = live(conn, ~p"/jobs/#{job.id}")
 
+      # This selector targets the "Start New Run" button in the section header
       view
-      |> element("button[phx-click='start_run']")
+      |> element("div.mb-4 button[phx-click='start_run']")
       |> render_click()
 
       assert_receive {:run_created, _run}
