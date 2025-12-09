@@ -62,6 +62,7 @@ defmodule TwinspinWeb.ReconciliationLive.IndexTest do
         |> element("a[href='/jobs/#{job.id}']")
         |> render_click()
         |> follow_redirect(conn, "/jobs/#{job.id}")
+        |> follow_redirect(conn, "/jobs/#{job.id}")
 
       assert html =~ "Test Job"
     end
@@ -76,6 +77,7 @@ defmodule TwinspinWeb.ReconciliationLive.IndexTest do
       view
       |> element("#jobs-#{job.id} button[phx-click='delete']")
       |> render_click()
+      |> follow_redirect(conn, "/jobs/#{job.id}")
 
       refute has_element?(view, "#jobs-#{job.id}")
       refute render(view) =~ "Test Job to Delete"
