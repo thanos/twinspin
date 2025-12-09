@@ -21,8 +21,6 @@ defmodule TwinspinWeb.Router do
     # Oban Web Dashboard
     forward "/oban", Oban.Web.Router
 
-    pipe_through :browser
-
     # live "/", DatabaseConnectionLive.Index, :index
 
     # Removed the old root route
@@ -31,8 +29,6 @@ defmodule TwinspinWeb.Router do
 
   # Authenticated routes
   scope "/", TwinspinWeb do
-    pipe_through :browser
-
     # on_mount will be added later for authentication
     live_session :require_authenticated_user, on_mount: [] do
       live "/settings", SettingsLive, :index
@@ -57,8 +53,6 @@ defmodule TwinspinWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through :browser
-
       live_dashboard "/dashboard", metrics: TwinspinWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
