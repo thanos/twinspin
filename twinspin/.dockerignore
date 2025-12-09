@@ -11,37 +11,29 @@
 erl_crash.dump
 
 # Static artifacts
-/assets/node_modules
+/priv/static
 
-# Since we are building assets from scratch,
-# we ignore priv/static
+# Since we are building assets from assets/,
+# we ignore priv/static. You may want to comment
+# this depending on your deployment strategy.
 /priv/static/
 
-# Test artifacts
+# Files matching config/*.secret.exs pattern contain sensitive
+# data and you should not commit them into version control.
+# 
+# Alternatively, you may comment the line below and commit the
+# secrets files as long as you replace their contents by environment
+# variables.
+/config/*.secret.exs
+
+# Node modules
+node_modules/
+assets/node_modules/
+
+# Editor files
+.vscode/
+.idea/
+
+# Test files
 /cover
-/test
-
-# Editor and IDE files
-.elixir_ls
-.vscode
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Docker files
-docker-compose.yml
-Dockerfile
-.dockerignore
-
-# Documentation
-README*.md
-docs/
-
-# CI/CD
-.github
-.gitlab-ci.yml
 
