@@ -259,7 +259,7 @@
                 </div>
               <% end %>
               <%!-- Partition Tree Viewer --%>
-              <%= if length(run.partitions) > 0 do %>
+              <%= if Ecto.assoc_loaded?(run.partitions) && length(run.partitions) > 0 do %>
                 <div class="mt-4 rounded-lg border border-gray-700 bg-gray-900 p-4">
                   <h4 class="mb-3 font-mono text-sm font-semibold text-cyan-400">
                     Partition Tree
