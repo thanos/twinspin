@@ -1,7 +1,17 @@
 defmodule TwinspinWeb.ReconciliationLive.Show do
   use TwinspinWeb, :live_view
   alias Twinspin.Repo
-  alias Twinspin.Reconciliation.{Job, TableReconciliation, Run}
+
+  alias Twinspin.Reconciliation.{
+    Job,
+    TableReconciliation,
+    Run,
+    # Added Partition alias
+    Partition,
+    # Added DiscrepancyResult alias
+    DiscrepancyResult
+  }
+
   import Ecto.Query
 
   @impl true
@@ -107,6 +117,8 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   defp get_job!(id) do
+    Job
+    |> Repo.get!(id)
     |> Repo.preload([
       :source_database_connection,
       :target_database_connection,
@@ -138,16 +150,6 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
           ]
         )
     ])
-        :source_database_connection,
-        :target_database_connection,
-        :table_reconciliations,
-        reconciliation_runs:
-          from(r in Run,
-            order_by: [desc: r.inserted_at]
-          )
-      ])
-
-    job
   end
 
   defp create_run(job_id) do
