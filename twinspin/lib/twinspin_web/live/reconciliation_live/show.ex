@@ -70,9 +70,6 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
     run = Repo.get!(Run, id)
     {:ok, _} = Repo.delete(run)
 
-    # Attempt to stop the worker if it's active
-    Twinspin.Reconciliation.Engine.stop_run(run.id)
-
     Phoenix.PubSub.broadcast(
       Twinspin.PubSub,
       "reconciliation_runs:#{socket.assigns.job.id}",
