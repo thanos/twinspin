@@ -26,7 +26,7 @@ defmodule Twinspin.Reconciliation.Job do
 
     field :error_message, :string
 
-    has_many :partitions, Twinspin.Reconciliation.Partition
+    has_many :partitions, Twinspin.Reconciliation.Partition, foreign_key: :reconciliation_job_id
 
     timestamps()
   end
