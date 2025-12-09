@@ -1,0 +1,270 @@
+<Layouts.app flash={@flash}>
+  <div class="min-h-screen bg-gray-950 text-gray-100 font-mono">
+    <!-- Header -->
+    <header class="border-b border-gray-800 bg-gray-900">
+      <div class="container mx-auto px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-emerald-500 rounded flex items-center justify-center text-gray-950 font-bold text-sm">
+              TS
+            </div>
+            <h1 class="text-xl font-bold text-emerald-400">TwinSpin</h1>
+            <span class="text-xs text-gray-500">Database Reconciliation Engine</span>
+          </div>
+          <nav class="flex gap-6">
+            <a href="#" class="text-sm text-emerald-400 hover:text-emerald-300 transition">
+              Dashboard
+            </a>
+            <a href="#" class="text-sm text-gray-400 hover:text-gray-300 transition">Jobs</a>
+            <a href="#" class="text-sm text-gray-400 hover:text-gray-300 transition">Results</a>
+            <a href="#" class="text-sm text-gray-400 hover:text-gray-300 transition">Settings</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+    
+<!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+      <!-- Metrics Bar -->
+      <div class="grid grid-cols-4 gap-4 mb-8">
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+          <div class="text-xs text-gray-500 uppercase mb-1">Total Jobs</div>
+          <div class="text-2xl font-bold text-gray-100">
+            {if @jobs_empty?, do: "0", else: Enum.count(@streams.jobs)}
+          </div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+          <div class="text-xs text-gray-500 uppercase mb-1">Running</div>
+          <div class="text-2xl font-bold text-blue-400">0</div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+          <div class="text-xs text-gray-500 uppercase mb-1">Completed</div>
+          <div class="text-2xl font-bold text-emerald-400">0</div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+          <div class="text-xs text-gray-500 uppercase mb-1">Failed</div>
+          <div class="text-2xl font-bold text-red-400">0</div>
+        </div>
+      </div>
+      
+<!-- Job Queue Section -->
+      <div class="bg-gray-900 border border-gray-800 rounded-lg mb-8">
+        <div class="border-b border-gray-800 p-4 flex items-center justify-between">
+          <h2 class="text-lg font-bold text-gray-100">Reconciliation Jobs</h2>
+          <button
+            phx-click="toggle_form"
+            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-gray-950 rounded text-sm font-semibold transition"
+          >
+            {if @show_form, do: "Cancel", else: "+ New Job"}
+          </button>
+        </div>
+        
+<!-- New Job Form (toggle visibility) -->
+        <%= if @show_form do %>
+          <div class="border-b border-gray-800 p-6 bg-gray-950">
+            <.form
+              for={@job_form}
+              id="job-form"
+              phx-change="validate"
+              phx-submit="save"
+              class="space-y-4"
+            >
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-gray-400 mb-2">Source Database Type</label>
+                  <.input
+                    field={@job_form[:source_db_type]}
+                    type="select"
+                    options={["db2", "oracle", "postgres", "mysql"]}
+                    class="w-full bg-gray-900 border-gray-700 text-gray-100 rounded px-3 py-2 text-sm font-mono"
+                    prompt="Select database type"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-2">Target Database Type</label>
+                  <.input
+                    field={@job_form[:target_db_type]}
+                    type="select"
+                    options={["db2", "oracle", "postgres", "mysql"]}
+                    class="w-full bg-gray-900 border-gray-700 text-gray-100 rounded px-3 py-2 text-sm font-mono"
+                    prompt="Select database type"
+                  />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-gray-400 mb-2">
+                    Source Connection String
+                  </label>
+                  <.input
+                    field={@job_form[:source_connection_string]}
+                    type="text"
+                    class="w-full bg-gray-900 border-gray-700 text-gray-100 rounded px-3 py-2 text-sm font-mono"
+                    placeholder="jdbc:db2://host:port/database"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-2">
+                    Target Connection String
+                  </label>
+                  <.input
+                    field={@job_form[:target_connection_string]}
+                    type="text"
+                    class="w-full bg-gray-900 border-gray-700 text-gray-100 rounded px-3 py-2 text-sm font-mono"
+                    placeholder="jdbc:oracle:thin:@host:port:sid"
+                  />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-gray-400 mb-2">Source Table</label>
+                  <.input
+                    field={@job_form[:source_table]}
+                    type="text"
+                    class="w-full bg-gray-900 border-gray-700 text-gray-100 rounded px-3 py-2 text-sm font-mono"
+                    placeholder="schema.table_name"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-2">Target Table</label>
+                  <.input
+                    field={@job_form[:target_table]}
+                    type="text"
+                    class="w-full bg-gray-900 border-gray-700 text-gray-100 rounded px-3 py-2 text-sm font-mono"
+                    placeholder="schema.table_name"
+                  />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-gray-400 mb-2">
+                    Partition Row Threshold
+                  </label>
+                  <.input
+                    field={@job_form[:partition_row_threshold]}
+                    type="number"
+                    class="w-full bg-gray-900 border-gray-700 text-gray-100 rounded px-3 py-2 text-sm font-mono"
+                    value="1000000"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-400 mb-2">Max Partition Depth</label>
+                  <.input
+                    field={@job_form[:partition_max_depth]}
+                    type="number"
+                    class="w-full bg-gray-900 border-gray-700 text-gray-100 rounded px-3 py-2 text-sm font-mono"
+                    value="10"
+                  />
+                </div>
+              </div>
+
+              <div class="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  phx-click="toggle_form"
+                  class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-gray-950 rounded text-sm font-semibold transition"
+                >
+                  Create Job
+                </button>
+              </div>
+            </.form>
+          </div>
+        <% end %>
+        
+<!-- Job List -->
+        <div class="p-4">
+          <%= if @jobs_empty? do %>
+            <div class="text-center py-12 text-gray-500">
+              <div class="text-4xl mb-4">📊</div>
+              <p class="text-sm">No reconciliation jobs yet</p>
+              <p class="text-xs mt-2">
+                Click "+ New Job" to create your first reconciliation job
+              </p>
+            </div>
+          <% else %>
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-gray-800 text-left">
+                  <th class="pb-3 text-gray-500 font-semibold uppercase text-xs">Job ID</th>
+                  <th class="pb-3 text-gray-500 font-semibold uppercase text-xs">
+                    Source → Target
+                  </th>
+                  <th class="pb-3 text-gray-500 font-semibold uppercase text-xs">Status</th>
+                  <th class="pb-3 text-gray-500 font-semibold uppercase text-xs">Progress</th>
+                  <th class="pb-3 text-gray-500 font-semibold uppercase text-xs">Started</th>
+                  <th class="pb-3 text-gray-500 font-semibold uppercase text-xs">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="jobs" phx-update="stream" class="text-gray-300">
+                <tr
+                  :for={{id, job} <- @streams.jobs}
+                  id={id}
+                  class="border-b border-gray-800 hover:bg-gray-800/50 transition"
+                >
+                  <td class="py-3 text-emerald-400">#{job.id}</td>
+                  <td class="py-3">
+                    <div class="text-xs">
+                      <span class="text-blue-400">{String.upcase(job.source_db_type)}</span>
+                      <span class="text-gray-600 mx-1">→</span>
+                      <span class="text-orange-400">{String.upcase(job.target_db_type)}</span>
+                    </div>
+                    <div class="text-gray-500 text-xs">
+                      {job.source_table} → {job.target_table}
+                    </div>
+                  </td>
+                  <td class="py-3">
+                    <span class={"px-2 py-1 rounded text-xs #{status_badge_class(job.status)}"}>
+                      {String.capitalize(job.status)}
+                    </span>
+                  </td>
+                  <td class="py-3">
+                    <%= if job.total_rows do %>
+                      <div class="flex items-center gap-2">
+                        <div class="flex-1 bg-gray-800 rounded-full h-2 max-w-[120px]">
+                          <div
+                            class={"h-2 rounded-full #{progress_bar_class(job.status)}"}
+                            style={"width: #{if job.total_rows > 0, do: trunc(job.processed_rows / job.total_rows * 100), else: 0}%"}
+                          >
+                          </div>
+                        </div>
+                        <span class="text-xs text-gray-500">
+                          {if job.total_rows > 0,
+                            do: trunc(job.processed_rows / job.total_rows * 100),
+                            else: 0}%
+                        </span>
+                      </div>
+                    <% else %>
+                      <span class="text-xs text-gray-500">—</span>
+                    <% end %>
+                  </td>
+                  <td class="py-3 text-gray-500 text-xs">
+                    {format_timestamp(job.started_at)}
+                  </td>
+                  <td class="py-3">
+                    <button
+                      phx-click="delete"
+                      phx-value-id={job.id}
+                      data-confirm="Are you sure?"
+                      class="text-red-400 hover:text-red-300 text-xs"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          <% end %>
+        </div>
+      </div>
+    </main>
+  </div>
+</Layouts.app>
