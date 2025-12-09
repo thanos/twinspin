@@ -6,7 +6,10 @@
           href="/"
           class="inline-flex items-center gap-2 font-mono text-sm text-cyan-400 hover:text-cyan-300"
         >
+          Home
         </a>
+        <span class="text-gray-600">/</span>
+        <span class="text-gray-400">Job Detail</span>
       </div>
 
       <div class="mb-8 border-b border-gray-800 pb-6">
@@ -210,6 +213,119 @@
                     <span class="font-semibold">Error:</span>
                     {run.error_message}
                   </p>
+                </div>
+              <% end %>
+              <%!-- Partition Tree Viewer --%>
+              <%= if length(run.partitions) > 0 do %>
+                <div class="mt-4 rounded-lg border border-gray-700 bg-gray-900 p-4">
+                  <h4 class="mb-3 font-mono text-sm font-semibold text-cyan-400">
+                    Partition Tree
+                  </h4>
+
+                  <div class="space-y-2">
+                    <%= for partition <- run.partitions do %>
+                      <%!-- Root Level Partition --%>
+                      <div class="rounded border border-gray-700 bg-gray-950 p-3">
+                        <div class="mb-2 flex items-center justify-between">
+                          <div class="flex items-center gap-2">
+                            <span class="font-mono text-xs text-gray-500">
+                              L{partition.depth}
+                            </span>
+                            <code class="rounded bg-gray-800 px-2 py-1 font-mono text-xs text-cyan-400">
+                              {partition.partition_key}
+                            </code>
+                            <span class={"rounded-full px-2 py-0.5 font-mono text-xs font-semibold #{status_badge_class(partition.status)}"}>
+                              {partition.status}
+                            </span>
+                          </div>
+                          <div class="flex items-center gap-3 font-mono text-xs">
+                            <span class="text-gray-600">
+                              Rows:
+                              <span class="text-gray-300">{partition.row_count_estimate}</span>
+                            </span>
+                            <span class="text-gray-600">
+                              Discrepancies:
+                              <span class="text-red-400">
+                                {length(partition.discrepancy_results)}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                        <%!-- Level 1 Children --%>
+                        <%= if length(partition.child_partitions) > 0 do %>
+                          <div class="ml-6 mt-2 space-y-2 border-l-2 border-gray-700 pl-4">
+                            <%= for child <- partition.child_partitions do %>
+                              <div class="rounded border border-gray-700 bg-gray-900 p-2">
+                                <div class="mb-1 flex items-center justify-between">
+                                  <div class="flex items-center gap-2">
+                                    <span class="font-mono text-xs text-gray-500">
+                                      L{child.depth}
+                                    </span>
+                                    <code class="rounded bg-gray-800 px-2 py-1 font-mono text-xs text-cyan-400">
+                                      {child.partition_key}
+                                    </code>
+                                    <span class={"rounded-full px-2 py-0.5 font-mono text-xs font-semibold #{status_badge_class(child.status)}"}>
+                                      {child.status}
+                                    </span>
+                                  </div>
+                                  <div class="flex items-center gap-3 font-mono text-xs">
+                                    <span class="text-gray-600">
+                                      Rows:
+                                      <span class="text-gray-300">
+                                        {child.row_count_estimate}
+                                      </span>
+                                    </span>
+                                    <span class="text-gray-600">
+                                      Discrepancies:
+                                      <span class="text-red-400">
+                                        {length(child.discrepancy_results)}
+                                      </span>
+                                    </span>
+                                  </div>
+                                </div>
+                                <%!-- Level 2 Children --%>
+                                <%= if length(child.child_partitions) > 0 do %>
+                                  <div class="ml-6 mt-2 space-y-1 border-l-2 border-gray-700 pl-4">
+                                    <%= for grandchild <- child.child_partitions do %>
+                                      <div class="rounded border border-gray-700 bg-gray-800 p-2">
+                                        <div class="flex items-center justify-between">
+                                          <div class="flex items-center gap-2">
+                                            <span class="font-mono text-xs text-gray-500">
+                                              L{grandchild.depth}
+                                            </span>
+                                            <code class="rounded bg-gray-900 px-2 py-1 font-mono text-xs text-cyan-400">
+                                              {grandchild.partition_key}
+                                            </code>
+                                            <span class={"rounded-full px-2 py-0.5 font-mono text-xs font-semibold #{status_badge_class(grandchild.status)}"}>
+                                              {grandchild.status}
+                                            </span>
+                                          </div>
+                                          <div class="flex items-center gap-3 font-mono text-xs">
+                                            <span class="text-gray-600">
+                                              Rows:
+                                              <span class="text-gray-300">
+                                                {grandchild.row_count_estimate}
+                                              </span>
+                                            </span>
+                                            <span class="text-gray-600">
+                                              Discrepancies:
+                                              <span class="text-red-400">
+                                                {length(grandchild.discrepancy_results)}
+                                              </span>
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    <% end %>
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
                 </div>
               <% end %>
             </div>
