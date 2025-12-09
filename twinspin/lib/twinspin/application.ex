@@ -10,6 +10,7 @@ defmodule Twinspin.Application do
     children = [
       TwinspinWeb.Telemetry,
       Twinspin.Repo,
+      {Oban.Registry, []},
       {Ecto.Migrator,
        repos: Application.fetch_env!(:twinspin, :ecto_repos), skip: skip_migrations?()},
       {DNSCluster, query: Application.get_env(:twinspin, :dns_cluster_query) || :ignore},
