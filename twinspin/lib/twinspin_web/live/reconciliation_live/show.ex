@@ -12,6 +12,12 @@ defmodule TwinspinWeb.ReconciliationLive.Show do
   import Ecto.Query
 
   @impl true
+  def render(assigns) do
+    ~H"""
+    """
+  end
+
+  @impl true
   def mount(%{"id" => id}, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Twinspin.PubSub, "reconciliation_jobs")
