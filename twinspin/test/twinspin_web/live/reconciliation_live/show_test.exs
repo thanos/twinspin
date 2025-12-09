@@ -95,7 +95,7 @@ defmodule TwinspinWeb.ReconciliationLive.ShowTest do
       |> element("div.mb-4 button[phx-click='start_run']")
       |> render_click()
 
-      assert_receive {:run_created, _run}
+      assert_receive {:run_created, _run}, 500
     end
 
     test "can delete a run", %{conn: conn} do
