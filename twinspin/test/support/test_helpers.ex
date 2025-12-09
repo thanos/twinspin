@@ -3,7 +3,7 @@ defmodule Twinspin.TestHelpers do
   Test helper functions for creating test data and common assertions.
   """
   alias Twinspin.Repo
-  alias Twinspin.DatabaseConnections.DatabaseConnection
+  alias Twinspin.DatabaseConnections.Connection
   alias Twinspin.Reconciliation.{Job, Run, TableReconciliation, Partition, DiscrepancyResult}
 
   @doc """
@@ -23,7 +23,7 @@ defmodule Twinspin.TestHelpers do
     attrs = Map.merge(default_attrs, Enum.into(attrs, %{}))
 
     %DatabaseConnection{}
-    |> DatabaseConnection.changeset(attrs)
+    |> Connection.changeset(attrs)
     |> Repo.insert!()
   end
 
