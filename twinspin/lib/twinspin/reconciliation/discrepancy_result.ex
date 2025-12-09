@@ -19,8 +19,6 @@ defmodule Twinspin.Reconciliation.DiscrepancyResult do
       :discrepancy_type,
       :row_identifier,
       :field_diffs,
-      :source_value,
-      :target_value,
       :partition_id
     ])
     |> validate_required([
