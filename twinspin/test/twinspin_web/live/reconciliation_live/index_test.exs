@@ -84,7 +84,7 @@ defmodule TwinspinWeb.ReconciliationLive.IndexTest do
     test "displays empty state when no jobs exist", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/")
 
-      assert has_element?(view, "h3", "No reconciliation jobs yet")
+      assert has_element?(view, "h3", "No jobs configured")
       assert has_element?(view, "p", "Create your first reconciliation job to get started")
     end
 
