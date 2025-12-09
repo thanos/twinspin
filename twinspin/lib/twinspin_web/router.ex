@@ -16,7 +16,6 @@ defmodule TwinspinWeb.Router do
 
   # Public routes (e.g., landing page, login, registration)
   # Oban Web Dashboard (outside TwinspinWeb scope)
-  forward "/oban", Oban.Web.Plug, oban: Oban
 
   scope "/", TwinspinWeb do
     pipe_through :browser
