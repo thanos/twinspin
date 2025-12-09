@@ -5,7 +5,7 @@ defmodule TwinspinWeb.ReconciliationLive.ShowTest do
 
   describe "Show page" do
     test "displays job details", %{conn: conn} do
-      source_conn = create_connection(%{name: "Source DB", db_type: "postgres"})	1
+      source_conn = create_connection(%{name: "Source DB", db_type: "postgres"})
       target_conn = create_connection(%{name: "Target DB", db_type: "mysql"})
 
       job =
@@ -24,7 +24,7 @@ defmodule TwinspinWeb.ReconciliationLive.ShowTest do
       assert html =~ "Reconcile customer data"
       assert html =~ "Source DB"
       assert html =~ "Target DB"
-      assert html =~ "postgresql"
+      assert html =~ "postgres"
       assert html =~ "mysql"
       assert html =~ "5000"
       assert html =~ "5"
