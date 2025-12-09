@@ -10,8 +10,11 @@ defmodule Twinspin.TestHelpers do
   Creates a test database connection with given attributes.
   """
   def create_connection(attrs \\ %{}) do
+    # Generate unique name to avoid conflicts
+    unique_suffix = :erlang.unique_integer([:positive])
+
     default_attrs = %{
-      name: "Test Connection",
+      name: "Test Connection #{unique_suffix}",
       db_type: "postgres",
       connection_string: "postgresql://user:pass@localhost:5432/test_db",
       description: "Test database connection"
