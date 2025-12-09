@@ -25,12 +25,9 @@ config :twinspin, TwinspinWeb.Endpoint,
 # Configure Oban
 config :twinspin, Oban,
   repo: Twinspin.Repo,
-  notifier: Oban.Notifiers.PG,
-  engine: Oban.Engines.Basic,
   queues: [reconciliation: 10],
   plugins: [Oban.Plugins.Pruner]
 
-# Configure esbuild (the version is required)
 config :esbuild,
   version: "0.17.11",
   twinspin: [
