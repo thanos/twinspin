@@ -255,6 +255,206 @@ podman exec -it twinspin-app /app/bin/twinspin remote
 
 ## Production Deployment
 
+### Pre-Deployment Checklist
+
+Before deploying to production, complete these essential steps:
+
+1. **Generate Secure SECRET_KEY_BASE**
+   ```bash
+   # Generate a secure 64-byte key
+   mix phx.gen.secret
+   # or
+   openssl rand -base64 64
+   ```
+
+2. **Update docker-compose.yml**
+   - Replace `changeme-generate-with-mix-phx-gen-secret` with your generated key
+   - Change `POSTGRES_PASSWORD` from default `postgres`
+   - Change `DATABASE_PASSWORD` to match
+
+3. **Review Environment Variables**
+   - Set `PHX_HOST` to your production domain
+   - Adjust `POOL_SIZE` based on expected load
+   - Configure `OBAN_QUEUES` for your workload
+
+4. **SSL/TLS Configuration**
+   - Use a reverse proxy (nginx, Caddy, Traefik) for HTTPS
+   - Configure SSL certificates
+   - Set up automatic renewal (Let's Encrypt)
+
+### Deployment Steps
+
+#### 1. Prepare the Server
+
+```bash
+# Install Podman (Fedora/RHEL/CentOS)
+sudo dnf install podman podman-compose
+
+# Install Podman (Ubuntu/Debian)
+sudo apt update
+sudo apt install podman
+pip3 install podman-compose
+
+# Or install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo apt install docker-compose  # Ubuntu/Debian
+```
+
+#### 2. Clone and Configure
+
+```bash
+# Clone your repository
+git clone https://github.com/yourusername/twinspin.git
+cd twinspin
+
+# Generate SECRET_KEY_BASE
+export SECRET_KEY_BASE=$(openssl rand -base64 64)
+
+# Update docker-compose.yml with your secrets
+# Edit the file manually or use sed:
+sed -i "s/changeme-generate-with-mix-phx-gen-secret/$SECRET_KEY_BASE/" docker-compose.yml
+```
+
+#### 3. Build and Deploy
+
+```bash
+# Using Podman
+podman-compose build
+podman-compose up -d
+
+# Using Docker
+docker-compose build
+docker-compose up -d
+
+# Verify containers are running
+podman-compose ps
+# or
+docker-compose ps
+```
+
+#### 4. Verify Deployment
+
+```bash
+# Check application logs
+podman-compose logs -f app
+
+# Check database logs
+podman-compose logs db
+
+# Test health endpoint
+curl http://localhost:4000/
+```
+
+#### 5. Set Up Reverse Proxy (Nginx Example)
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### Monitoring and Maintenance
+
+#### Health Checks
+
+```bash
+# Check container health
+podman inspect twinspin-app --format='{{.State.Health.Status}}'
+
+# View health check logs
+podman inspect twinspin-app --format='{{json .State.Health}}'
+```
+
+#### Log Management
+
+```bash
+# Follow live logs
+podman-compose logs -f --tail=100 app
+
+# Export logs
+podman logs twinspin-app > /var/log/twinspin/app.log
+
+# Rotate logs with logrotate
+# Create /etc/logrotate.d/twinspin
+```
+
+#### Updates and Rollbacks
+
+```bash
+# Pull latest code
+git pull origin main
+
+# Rebuild and restart
+podman-compose down
+podman-compose build
+podman-compose up -d
+
+# Rollback if needed
+git checkout <previous-commit>
+podman-compose down
+podman-compose build
+podman-compose up -d
+```
+
+### Performance Tuning
+
+#### Database Connection Pool
+
+Adjust based on your workload:
+```yaml
+# docker-compose.yml
+environment:
+  POOL_SIZE: 20  # Increase for heavy database usage
+```
+
+#### Oban Workers
+
+```yaml
+# docker-compose.yml
+environment:
+  # default:10 for general tasks
+  # reconciliation:20 for more concurrent reconciliation jobs
+  OBAN_QUEUES: "default:10,reconciliation:20"
+```
+
+#### Resource Limits
+
+```yaml
+# docker-compose.yml
+services:
+  app:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+```
+
 ### Security Considerations
 
 1. **Change default passwords** in `docker-compose.yml`
