@@ -13,11 +13,8 @@ defmodule Twinspin.TestHelpers do
     default_attrs = %{
       name: "Test Connection",
       db_type: "postgresql",
-      host: "localhost",
-      port: 5432,
-      database: "test_db",
-      username: "test_user",
-      password: "test_pass"
+      connection_string: "postgresql://user:pass@localhost:5432/test_db",
+      description: "Test database connection"
     }
 
     attrs = Map.merge(default_attrs, Enum.into(attrs, %{}))
