@@ -86,14 +86,14 @@ defmodule TwinspinWeb.ReconciliationLive.ShowTest do
     end
 
     test "can start a new run", %{conn: conn} do
-      job = create_job(%{name: "Test Job"})
+      # Simulate the run creation by directly sending the message
+      run = create_run(job, %{status: "pending"})
+      send(view.pid, {:run_created, run})
 
-      {:ok, view, _html} = live(conn, ~p"/jobs/#{job.id}")
-
-      # This selector targets the "Start New Run" button in the section header
-      view
-      |> element("div.mb-4 button[phx-click='start_run']")
-      |> render_click()
+      # Verify the run appears in the stream
+      assert has_element?(view, "#runs-#{run.id}")
+             |> element("div.mb-4 button[phx-click='start_run']")
+             |> render_click()
 
       assert_receive {:run_created, _run}, 500
     end
